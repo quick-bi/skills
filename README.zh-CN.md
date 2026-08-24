@@ -22,6 +22,10 @@ npx skills add https://github.com/quick-bi/skills --skill <skill-name>
 ./skills     技能示例
 ```
 
+## 贡献
+
+版本与 changelog 约定见 [CONTRIBUTING.zh-CN.md](./CONTRIBUTING.zh-CN.md)。
+
 ## 许可证
 
 见 [LICENSE](./LICENSE)。

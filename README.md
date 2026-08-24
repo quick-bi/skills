@@ -22,6 +22,10 @@ npx skills add https://github.com/quick-bi/skills --skill <skill-name>
 ./skills     Skill examples
 ```
 
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for versioning and changelog conventions.
+
 ## License
 
 See [LICENSE](./LICENSE).
