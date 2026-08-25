@@ -36,6 +36,7 @@ npx skills add https://gitee.com/quick-bi/skills.git --skill <skill-name>
 | Skill | Description | Status |
 | --- | --- | --- |
 | [quickbi-custom-component](./skills/quickbi-custom-component/SKILL.md) | Build a Quick BI custom component (chart / dashboard widget) from a natural-language requirement — scaffolding, component meta, DSL binding, validation, and release. | Placeholder (work in progress) |
+| [quickbi-aipro](./skills/quickbi-aipro/SKILL.md) | Quick BI AIPro data Q&A channel — routes natural-language data questions (metrics, rankings, trends, ratios, YoY/MoM) to AIPro and answers in text and tables. | Placeholder (work in progress) |
 
 ## Contributing
 
