@@ -6,14 +6,23 @@ Quick BI 的 Agent Skills 集合。每个技能是一个自包含文件夹，内
 
 ## 安装
 
+GitHub：
+
 ```bash
 npx skills add https://github.com/quick-bi/skills
 ```
 
-安装指定技能：
+Gitee：
+
+```bash
+npx skills add https://gitee.com/quick-bi/skills
+```
+
+安装指定技能，追加 `--skill <skill-name>`：
 
 ```bash
 npx skills add https://github.com/quick-bi/skills --skill <skill-name>
+npx skills add https://gitee.com/quick-bi/skills --skill <skill-name>
 ```
 
 ## 仓库结构
@@ -21,6 +30,12 @@ npx skills add https://github.com/quick-bi/skills --skill <skill-name>
 ```text
 ./skills     技能示例
 ```
+
+## 技能列表
+
+| 技能 | 说明 | 状态 |
+| --- | --- | --- |
+| [quickbi-custom-component](./skills/quickbi-custom-component/SKILL.md) | 从自然语言需求生成 Quick BI 自定义组件（图表 / 仪表板组件）——脚手架、组件 meta、DSL 绑定、校验与发布。 | 占位（开发中） |
 
 ## 贡献
 

@@ -6,14 +6,23 @@ Agent Skills for Quick BI. Each skill is a self-contained folder of instructions
 
 ## Install
 
+GitHub:
+
 ```bash
 npx skills add https://github.com/quick-bi/skills
 ```
 
-To install a specific skill:
+Gitee:
+
+```bash
+npx skills add https://gitee.com/quick-bi/skills
+```
+
+To install a specific skill, append `--skill <skill-name>`:
 
 ```bash
 npx skills add https://github.com/quick-bi/skills --skill <skill-name>
+npx skills add https://gitee.com/quick-bi/skills --skill <skill-name>
 ```
 
 ## Repository structure
@@ -21,6 +30,12 @@ npx skills add https://github.com/quick-bi/skills --skill <skill-name>
 ```text
 ./skills     Skill examples
 ```
+
+## Skills
+
+| Skill | Description | Status |
+| --- | --- | --- |
+| [quickbi-custom-component](./skills/quickbi-custom-component/SKILL.md) | Build a Quick BI custom component (chart / dashboard widget) from a natural-language requirement — scaffolding, component meta, DSL binding, validation, and release. | Placeholder (work in progress) |
 
 ## Contributing
 
