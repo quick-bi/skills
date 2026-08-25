@@ -9,20 +9,20 @@ Quick BI 的 Agent Skills 集合。每个技能是一个自包含文件夹，内
 GitHub：
 
 ```bash
-npx skills add https://github.com/quick-bi/skills
+npx skills add https://github.com/quick-bi/skills.git
 ```
 
 Gitee：
 
 ```bash
-npx skills add https://gitee.com/quick-bi/skills
+npx skills add https://gitee.com/quick-bi/skills.git
 ```
 
 安装指定技能，追加 `--skill <skill-name>`：
 
 ```bash
-npx skills add https://github.com/quick-bi/skills --skill <skill-name>
-npx skills add https://gitee.com/quick-bi/skills --skill <skill-name>
+npx skills add https://github.com/quick-bi/skills.git --skill <skill-name>
+npx skills add https://gitee.com/quick-bi/skills.git --skill <skill-name>
 ```
 
 ## 仓库结构
