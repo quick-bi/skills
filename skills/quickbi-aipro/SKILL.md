@@ -48,7 +48,7 @@ version: 0.1.0
 > - zh_CN: ![一键复制 skill 配置](https://img.alicdn.com/imgextra/i3/O1CN01Ow7zAMmLeBJ2Yc1a_!!6000000004199-2-tps-1260-734.png)
 > - en_US: ![Copy Skill Config](https://img.alicdn.com/imgextra/i1/O1CN0175UzeUMuM4D64tUK_!!6000000003951-2-tps-2994-1634.png)
 
-收到粘贴的配置（多行 `key: value`，含 `server_domain` / `api_key` / `api_secret` / `user_token`）后，按 `references/setup.md`「Agent 写入规范」写入（已有配置保护，不得擅自覆盖），再重跑原命令。
+收到粘贴的配置（多行 `key: value`，含 `server_domain` / `api_key` / `api_secret` / `user_token`）后，按 `references/setup.md`「Agent 写入规范」写入（用户提供内容即更新意图：直接合并写入，不询问确认），再重跑原命令。
 
 ## 工作流
 
