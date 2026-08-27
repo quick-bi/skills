@@ -1,0 +1,27 @@
+# Quick BI AIPro 问数 Skill 配置示例
+#
+# 用法：复制为 ~/.qbi/config.yaml 后填入真实值（建议 chmod 600）：
+#   cp config.example.yaml ~/.qbi/config.yaml
+# 也可放到 <项目>/.qbi/config.yaml 作工作目录级配置
+# （逐项覆盖 ~/.qbi/config.yaml，用于多环境凭证隔离）
+#
+# 说明：
+# - 该文件可能与其他 Quick BI skill 共用，各自只读取自己认识的键，互不影响
+# - 环境变量 QUICKBI_SERVER_DOMAIN / QUICKBI_API_KEY / QUICKBI_API_SECRET
+#   优先级高于本文件（逐项生效）
+# - 凭证获取：登录 Quick BI 控制台 → 右上角头像 →「账号设置与管理」→
+#   「一键复制 skill 配置」（详见 references/setup.md）
+
+# QuickBI 服务域名（必填，无内置默认值）：按实际环境填写，
+# 独立部署/专有云环境为部署地址
+server_domain:
+
+# 个人级 AK（必配；组织级/空间级 AK 会被 403 拒绝）
+api_key:
+api_secret:
+
+# 用户 token（可选；配置后随问数请求携带 user_id，以该用户身份取数）
+user_token:
+
+# 用户提示词（可选）：业务口径/场景约束，自动拼在通用边界之后、用户问题之前
+user_prompt:

@@ -1,39 +1,118 @@
 ---
 name: quickbi-aipro
-description: Placeholder. Quick BI AIPro data Q&A channel — routes natural-language data questions (metrics, rankings, trends, ratios, YoY/MoM) to AIPro via the Quick BI ABI Chat open API and answers in text and tables only. Use when the user asks data questions against Quick BI datasets.
-version: 0.0.1
+description: Quick BI AIPro 数据问答（问数）通道，纯问数、只出文字与表格。触发条件：用户提出数据查询、取数、指标计算、排名/趋势/占比/同环比等数据分析问题（如"近30天销售额多少""7月各渠道出货金额排名""上个月规模同比变化"），或在本对话已用过本 Skill 后继续追问数据、补充时间范围/统计口径。本期仅支持基于已准备数据资产的标准问数场景。不触发条件：① 用户要生成/修改仪表板、看板、图表、报表、报告、HTML 页面等可视化产物；② 数据资产同步、上传文件、创建数据集/数据源；③ 建模/配置类操作（修改数据集字段、配置权限等）；④ 与数据无关的闲聊、写代码、写文档——其中 ①②③ 超出本技能能力边界，应直接告知用户当前技能不支持、可到 Quick BI 上实现。凭证从 QUICKBI_* 环境变量或 ~/.qbi/config.yaml 读取（支持工作目录级配置覆盖，首次使用需个人级 AK）。一旦使用过本 Skill，后续问数类追问必须继续走本 Skill（带 --session-id 保持上下文），不要自行回答数据问题。
+version: 0.1.0
 ---
 
-# Quick BI AIPro Data Q&A
+# Quick BI AIPro 数据问答
 
-> **Status: placeholder.** The workflow below is an outline only — none of the
-> steps are authored yet. Do not rely on this skill for real work.
+## 概述
 
-## Scope
+纯问数入口：把用户数据问题发给 Quick BI 智能问数开放接口，取回文字/表格形式的分析结论并原样展示；不产出图表或任何可视化产物。脚本自动附带问数边界约束，把用户问题原文传给 `--message` 即可，不要自行补充约束或改写。零第三方依赖（Python 3.8+ 标准库）。
 
-TODO — what this skill covers, and what it explicitly does not. Pure data Q&A
-only (text and table answers); dashboard / report generation and data asset
-management are out of scope for this channel.
+参考文档（按需读取）：
 
-## Prerequisites
+- `references/api.md`：入参/出参契约与错误码表
+- `references/setup.md`：接入流程与凭证配置
 
-TODO — required toolchain (Python 3.8+, zero third-party dependencies),
-credentials, and workspace access.
+## 触发条件
 
-## Steps
+- 数据查询/取数、指标计算与对比、排名/趋势/占比类分析（"各渠道出货金额""上个月规模同比变化""近30天销售额趋势"）
+- 对上一轮结果的追问与补充（缩小范围、补时间/渠道/口径），带 `--session-id` 继续（见工作流）
+- 会话粘性：本对话用过本 Skill 后，问数类需求默认继续走本 Skill；不自行回答数据问题、不改用其他工具，除非用户明确要求
 
-1. TODO — submit the user's data question as-is (one question = one submission).
-2. TODO — read the SSE response in segments until the final result arrives.
-3. TODO — handle server counter-questions (time range, caliber) as terminal
-   states; relay the user's reply within the same session.
-4. TODO — multi-turn follow-ups reusing the same session id.
-5. TODO — recover from timeouts and errors via conversation id instead of
-   resubmitting.
+## 能力边界（不触发）
 
-## Pitfalls
+本期仅支持基于已准备数据资产的标准问数场景。以下三类不支持，**不要**发给问数服务、也不要用问数结果拼"近似产物"交差，按话术原样回复：
 
-TODO — known traps to document once the workflow is authored.
+1. 生成仪表板、看板、报表、报告、HTML 页面等可视化产物
+2. 数据资产同步、上传文件、创建数据集 / 数据源
+3. 建模 / 配置类操作（修改数据集字段、配置权限等）
 
-## Verification
+> 当前技能暂不支持该能力，本期仅支持基于已准备数据资产的标准问数场景。这类需求可以到 Quick BI 上实现。
 
-TODO — how to confirm the data Q&A flow works end to end.
+问数途中提出时：先给完已取到的数据结论，再说明边界。判法：诉求是"拿到数据结论"→ 走本 Skill（顺带想"看张图"也走，只出文字与表格）；是"可视化/可交互产物"或"改动数据资产本身"→ 不走。与数据无关（闲聊/写代码/写文档）、用户明确要求换工具的，不走且不用上面的话术。
+
+## 前置条件
+
+**直接执行提交命令，不要预先检查配置、不要主动向用户索取凭证**。脚本从 QUICKBI_* 环境变量或 `~/.qbi/config.yaml` 自动读取凭证（工作目录级 `<workspace>/.qbi/config.yaml` 可覆盖；可能已在其他入口配置过）。仅当脚本报 `CONFIG_MISSING` / `AUTH_FAILED` 时，输出下方「凭证配置引导」（**必须带截图**，只发文字步骤是错误做法），用户粘贴回配置后按 `references/setup.md`「Agent 写入规范」落盘，再重跑原命令。
+
+### 凭证配置引导（报凭证类错误时原样输出，含图片）
+
+输出下面整段引导，截图**用在线链接**嵌在回复里一起发出（按用户语言选对应版本，只输出一张）：
+
+> 请登录 Quick BI 控制台，点击**右上角头像**，在下拉菜单的「账号设置与管理」区域（「个人识别码」条目旁）点击「**一键复制 skill 配置**」，然后把复制到的内容直接粘贴到对话里发回，我来帮你写入配置文件。
+>
+> 复制入口见下图红框：
+>
+> - zh_CN: ![一键复制 skill 配置](https://img.alicdn.com/imgextra/i3/O1CN01Ow7zAMmLeBJ2Yc1a_!!6000000004199-2-tps-1260-734.png)
+> - en_US: ![Copy Skill Config](https://img.alicdn.com/imgextra/i1/O1CN0175UzeUMuM4D64tUK_!!6000000003951-2-tps-2994-1634.png)
+
+收到粘贴的配置（多行 `key: value`，含 `server_domain` / `api_key` / `api_secret` / `user_token`）后，按 `references/setup.md`「Agent 写入规范」写入（已有配置保护，不得擅自覆盖），再重跑原命令。
+
+## 工作流
+
+### 提交
+
+用户问题**原样、整体**传出：不改写/摘要/补全，用户没给时间/渠道/口径就照原样提交，绝不假设"最近7天"类默认值、不注入系统日期、不为出数换口径；仅当指代不明（如"那再看下招行渠道的"）时把指代补全为自包含问题（只补主语/维度，不改口径、不补时间）。`scripts/chat.py` 相对本 Skill 根目录，其他目录下请用绝对路径；`--workspace-dir` 传用户工作目录（决定工作目录级配置层，忘传回退当前目录）：
+
+```bash
+python scripts/chat.py --message "<用户问题原文>" --workspace-dir <用户工作目录> --stream-step
+```
+
+本会话已有 sessionId 时（无论问题看似多新）必须带同一 `--session-id`：
+
+```bash
+python scripts/chat.py --message "<用户问题原文>" --session-id <sessionId> --workspace-dir <用户工作目录> --stream-step
+```
+
+**一次提问 = 一次提交**：多个子问题也整体作为一条 message 提交（服务端负责拆解编排；客户端拆分会丢关联分析、重复耗额度）。多轮追问同此命令，不重述原问题（服务端持有会话上下文）。
+
+### 分段拉取
+
+`status=running` 时不展示任何内容，用返回的 `conversationId` / `cursor` / `sessionId` 继续拉下一段，直到 `status=done`（续调同样要签名解析凭证，`--workspace-dir` 与提交时保持一致）：
+
+```bash
+python scripts/chat.py --conversation-id <conversationId> --cursor <cursor> --session-id <sessionId> --workspace-dir <用户工作目录> --stream-step
+```
+
+问数可能执行数分钟，单次命令执行超时建议 300000ms（5 分钟），勿用 3 分钟类短超时。拉取被提前杀掉、或报 `SSE_TIMEOUT` / `SSE_RECONNECT_EXHAUSTED`（任务仍在后台执行）时，用**本次**提交的 cid + sessionId 继续获取结果，勿重新提交、勿用旧对话的 ID：
+
+```bash
+python scripts/chat.py --conversation-id <本次 cid> --session-id <本次 sessionId> --workspace-dir <用户工作目录>
+```
+
+> SSL 默认校验证书；校验失败（自签环境）时脚本自动降级为不校验重试，无需配置。
+
+### 展示
+
+`--stream-step` 每次返回单个 JSON（完整契约见 `references/api.md`）：
+
+- `status=running`：只读到工具/心跳，或 message.stop 文本已缓存——不展示，继续拉
+- `status=partial`：上一段缓存文本回显——`text` 非空必须立即展示，再继续拉
+- `status=done`：`reply` 为最终答案，原样透出后结束本轮
+
+**展示刚性：原样透出 `text` / `reply`，零包装**。不加引导语/前缀（如"查询结果如下"），不追加自己的总结/建议，不截断/改写/翻译/重排版，不自己重打表格；数据来源、统计区间、口径、时间范围、筛选条件、单位、备注等元信息必须完整保留并随 reply 展示。`sessionId` 内部记住供追问，不展示给用户。出参含 `artifactFiltered: true` 时照常展示 reply，不提标签/产物、不渲染看板。
+
+用户点名要图（饼图/折线图等）：照常给结论，一句话说明本通道仅输出文字与表格；不自行调画图工具补图，也不因此报错。
+
+### 异常恢复
+
+- 失败时 stdout 输出 `{ "connected": false, "error": { code/message/suggestion/traceId } }`，按 `suggestion` 解释；报障附 `traceId`；错误码表见 `references/api.md`
+- `CONFIG_MISSING` / `AUTH_FAILED`：原样输出「凭证配置引导」（含截图），写入后重跑
+- `SSE_TIMEOUT` / `SSE_RECONNECT_EXHAUSTED`：按「分段拉取」继续获取，勿重新提交
+
+### 会话取消
+
+用户要求停止时：`python scripts/chat.py --cancel --session-id <sid> --workspace-dir <用户工作目录>`（必须显式指定会话）；已消耗额度不退还。
+
+## 硬性规则
+
+1. **纯问数边界**：命中「能力边界」三类不发本 Skill，不点名本环境可能不存在的具体 skill，不用其他工具变通实现
+2. **不替用户补条件**：给什么问什么，不假设默认值、不塞系统日期、不换口径凑结果
+3. **全程复用同一 `--session-id`**：追问、续读结果都必须带；不因问题看似无关而丢弃，除非用户明确要求开新会话
+4. **一次提问一次提交**：不拆分、不并行；分段获取不算重复提交
+5. **续读用本次的 cid**：用旧 conversation_id 会拿到上一次的结果
+6. **不预检配置、不主动索取凭证**：直接运行，仅凭证类错误时引导；引导必须带截图
+7. **超时设 300000ms**：超时后携 cid + sessionId 继续获取，勿重新提交
+8. **展示不自己拼**：reply 原样完整透出，元信息不丢

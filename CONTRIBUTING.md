@@ -48,4 +48,4 @@ Do not keep a single changelog at the repo root — users install individual ski
 
 ## Releases
 
-Tag releases as `<skill-name>@<version>` (e.g. `quickbi-dsl@1.1.0`). For major changes, publish a GitHub Release alongside the tag.
+Tag releases as `<skill-name>@<version>` (e.g. `quickbi-aipro@1.1.0`). For major changes, publish a GitHub Release alongside the tag.

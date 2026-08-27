@@ -48,4 +48,4 @@ version: 1.0.0
 
 ## 发版
 
-以 `<skill-name>@<version>` 打 tag（如 `quickbi-dsl@1.1.0`）。重大变更可另发 GitHub Release。
+以 `<skill-name>@<version>` 打 tag（如 `quickbi-aipro@1.1.0`）。重大变更可另发 GitHub Release。
