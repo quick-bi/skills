@@ -1,0 +1,84 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*@*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse and validate tag
+        id: tag
+        env:
+          TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$TAG" != *@* ]]; then
+            echo "::error::tag '$TAG' must look like <skill-name>@<version>"
+            exit 1
+          fi
+          skill="${TAG%@*}"
+          version="${TAG##*@}"
+          if [[ ! -d "skills/$skill" ]]; then
+            echo "::error::no skill folder skills/$skill for tag '$TAG'"
+            exit 1
+          fi
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::version '$version' is not semantic"
+            exit 1
+          fi
+          {
+            echo "skill=$skill"
+            echo "version=$version"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build skill zip
+        env:
+          SKILL: ${{ steps.tag.outputs.skill }}
+          TAG: ${{ github.ref_name }}
+        shell: bash
+        run: scripts/build.sh "$SKILL" --tag "$TAG"
+
+      - name: Extract release notes from CHANGELOG.md
+        id: notes
+        env:
+          SKILL: ${{ steps.tag.outputs.skill }}
+          VERSION: ${{ steps.tag.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          changelog="skills/$SKILL/CHANGELOG.md"
+          notes=""
+          if [ -f "$changelog" ]; then
+            notes="$(awk -v v="$VERSION" '
+              $0 ~ "^## \\[" v "\\]" { flag = 1; next }
+              flag && /^## \[/ { exit }
+              flag { print }
+            ' "$changelog")"
+          fi
+          if [ -z "$notes" ]; then
+            notes="Release of $SKILL $VERSION."
+          fi
+          {
+            echo 'notes<<RELEASE_NOTES_EOF'
+            printf '%s\n' "$notes"
+            echo 'RELEASE_NOTES_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create release and attach zip
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ steps.tag.outputs.skill }} ${{ steps.tag.outputs.version }}
+          body: ${{ steps.notes.outputs.notes }}
+          files: dist/*.zip
+          fail_on_unmatched_files: true

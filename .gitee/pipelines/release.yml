@@ -1,0 +1,68 @@
+version: '1.0'
+name: skill-release
+displayName: Skill Release
+
+# Triggered when a <skill-name>@<version> tag is pushed (mirrored from GitHub).
+triggers:
+  push:
+    tags:
+      include:
+        - ^.*@.*$
+
+stages:
+  - stage: build
+    displayName: Build
+    steps:
+      - step: shell@agent
+        name: build_skill
+        displayName: Build skill zip
+        hostGroupID: gitee-go
+        script: |
+          set -eu
+          # Find the <skill>@<version> tag pointing at the checked-out commit.
+          TAG="$(git tag --points-at HEAD | grep '@' | sort | head -n 1 || true)"
+          if [ -z "$TAG" ]; then
+            echo "no <skill-name>@<version> tag points at HEAD" >&2
+            exit 1
+          fi
+          NAME="${TAG%@*}"
+          VERSION="${TAG##*@}"
+          echo "building $NAME $VERSION"
+          bash scripts/build.sh "$NAME" --tag "$TAG" --out dist
+          # Release notes: this version's section from the skill's CHANGELOG.md.
+          changelog="skills/$NAME/CHANGELOG.md"
+          if [ -f "$changelog" ]; then
+            awk -v v="$VERSION" '
+              $0 ~ "^## \\[" v "\\]" { flag = 1; next }
+              flag && /^## \[/ { exit }
+              flag { print }
+            ' "$changelog" > dist/RELEASE_NOTES.md
+          fi
+          [ -s dist/RELEASE_NOTES.md ] || echo "Release of $NAME $VERSION." > dist/RELEASE_NOTES.md
+          # Hand values over to the release stage.
+          params="${GITEE_PARAMS:-GITEE_PARAMS}"
+          echo "TAG=$TAG" >> "$params"
+          echo "SKILL_NAME=$NAME" >> "$params"
+          echo "VERSION=$VERSION" >> "$params"
+          echo "SKILL_ZIP_FILE=$NAME-$VERSION.zip" >> "$params"
+          ls -l dist
+        artifacts:
+          - name: SKILL_DIST
+            path:
+              - ./dist
+
+  - stage: release
+    displayName: Release
+    steps:
+      - step: release@gitee
+        name: release_skill
+        displayName: Publish Gitee release
+        releaseName: ${SKILL_NAME} ${VERSION}
+        description: dist/RELEASE_NOTES.md
+        tagName: ${TAG}
+        upstreamArtifact:
+          - SKILL_DIST
+        assertFiles:
+          - dist/${SKILL_ZIP_FILE}
+        prerelease: false
+        allowUpdate: true

@@ -48,4 +48,11 @@ version: 1.0.0
 
 ## 发版
 
-以 `<skill-name>@<version>` 打 tag（如 `quickbi-aipro@1.1.0`）。重大变更可另发 GitHub Release。
+以 `<skill-name>@<version>` 打 tag（如 `quickbi-aipro@1.1.0`）。推送 tag 会触发 GitHub 与 Gitee 上的 CI：把对应技能打包为 `<skill-name>-<version>.zip` 并挂到两端 Release。zip 内即技能文件夹本身，解压到智能体的技能目录即可完成安装。
+
+本地构建：
+
+```bash
+scripts/build.sh <skill-name>   # 单个技能
+scripts/build.sh all            # 全部技能
+```

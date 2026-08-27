@@ -48,4 +48,11 @@ Do not keep a single changelog at the repo root — users install individual ski
 
 ## Releases
 
-Tag releases as `<skill-name>@<version>` (e.g. `quickbi-aipro@1.1.0`). For major changes, publish a GitHub Release alongside the tag.
+Tag releases as `<skill-name>@<version>` (e.g. `quickbi-aipro@1.1.0`). Pushing the tag triggers CI on GitHub and Gitee: the tagged skill is packaged into `<skill-name>-<version>.zip` and attached to the release on both platforms. The zip contains the skill folder itself, so unzipping into an agent's skills directory installs it.
+
+Build zips locally with:
+
+```bash
+scripts/build.sh <skill-name>   # one skill
+scripts/build.sh all            # every skill
+```

@@ -25,10 +25,13 @@ npx skills add https://github.com/quick-bi/skills.git --skill <skill-name>
 npx skills add https://gitee.com/quick-bi/skills.git --skill <skill-name>
 ```
 
+每个 Release 还附带预构建的 zip——从 [GitHub Releases](https://github.com/quick-bi/skills/releases) 或 [Gitee 发行版](https://gitee.com/quick-bi/skills/releases) 下载，解压到智能体的技能目录即可使用。
+
 ## 仓库结构
 
 ```text
 ./skills     技能示例
+./scripts    构建工具
 ```
 
 ## 技能列表
