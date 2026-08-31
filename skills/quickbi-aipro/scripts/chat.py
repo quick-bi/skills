@@ -76,8 +76,10 @@ def build_prompt_prefix(cfg=None):
     return "\n".join(parts) + "\n"
 
 
-# 产物类标签兜底过滤：约束已禁止产物，万一服务端仍返回标签，不能把标签原文透给用户
+# 产物类标签与 HTML 注释兜底过滤：约束已禁止产物，万一服务端仍返回标签或
+# 内部注释标记（如 <!--TABLE_TITLE:...-->），不能把原文透给用户
 ARTIFACT_TAG_RE = re.compile(r"<\s*/?\s*artifact-[\w-]+\b[^>]*>", re.IGNORECASE)
+HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 
 
 def build_message(user_message, guard=True, cfg=None):
@@ -85,12 +87,13 @@ def build_message(user_message, guard=True, cfg=None):
     return build_prompt_prefix(cfg) + user_message if guard else user_message
 
 
-def strip_artifact_tags(reply):
-    """过滤产物类标签（兜底）。返回 (clean_reply, filtered)。"""
-    if not ARTIFACT_TAG_RE.search(reply):
+def strip_forbidden_markup(reply):
+    """过滤产物类标签与 HTML 注释（兜底）。返回 (clean_reply, filtered)。"""
+    if not (ARTIFACT_TAG_RE.search(reply) or HTML_COMMENT_RE.search(reply)):
         return reply, False
-    clean = re.sub(r"\n{3,}", "\n\n", ARTIFACT_TAG_RE.sub("", reply)).strip()
-    log("回复中出现产物标签（约束应已禁止），已过滤标签原文")
+    clean = HTML_COMMENT_RE.sub("", ARTIFACT_TAG_RE.sub("", reply))
+    clean = re.sub(r"\n{3,}", "\n\n", clean).strip()
+    log("回复中出现产物标签或 HTML 注释（约束应已禁止），已过滤原文")
     return clean, True
 
 
@@ -196,7 +199,7 @@ def main():
     step = consume_stream_step(cfg, PATH_STREAM, conversation_id, args.timeout,
                                args.max_reconnects, cursor=args.cursor,
                                session_id=session_id)
-    text, filtered = strip_artifact_tags(step.get("text") or "")
+    text, filtered = strip_forbidden_markup(step.get("text") or "")
     result = {"type": "stream_step", "connected": True,
               "status": step["status"], "final": step["final"],
               "sessionId": session_id, "conversationId": conversation_id,
