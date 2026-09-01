@@ -1,5 +1,5 @@
 ---
-name: quickbi-custom-component
+name: quickbi-custom-ai-chart-builder
 description: 开发 QuickBI AI Pro 仪表板自定义组件：脚手架新建、构建打包、注册上传。
 ---
 

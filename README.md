@@ -38,7 +38,7 @@ Each release also carries a prebuilt zip — download it from [GitHub Releases](
 
 | Skill | Description | Status |
 | --- | --- | --- |
-| [quickbi-custom-component](./skills/quickbi-custom-component/SKILL.md) | Build a Quick BI custom component (chart / dashboard widget) from a natural-language requirement — scaffolding, component meta, DSL binding, validation, and release. | Placeholder (work in progress) |
+| [quickbi-custom-ai-chart-builder](./skills/quickbi-custom-ai-chart-builder/SKILL.md) | Build a Quick BI custom component (chart / dashboard widget) from a natural-language requirement — scaffolding, component meta, DSL binding, validation, and release. | Placeholder (work in progress) |
 | [quickbi-data-analyst](./skills/quickbi-data-analyst/SKILL.md) | Quick BI AIPro data Q&A channel — routes natural-language data questions (metrics, rankings, trends, ratios, YoY/MoM) to AIPro and answers in text and tables. | Active |
 
 ## Contributing
