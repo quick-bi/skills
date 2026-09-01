@@ -22,7 +22,7 @@
 
 引导用户去 Quick BI 控制台的「个人识别码」区域一键复制配置：
 
-1. 告知用户：登录 Quick BI 控制台后，点击**右上角头像**，在下拉菜单的「账号设置与管理」区域（「个人识别码」条目旁）点击「**一键复制 skill 配置**」——复制的内容形如多行 `key: value` 配置，含 `server_domain` / `api_key` / `api_secret` / `user_token`
+1. 告知用户：登录 Quick BI 控制台后，点击**右上角头像**，在下拉菜单的「账号设置与管理」区域（「个人识别码」条目旁）点击「**一键复制 skill 配置**」——复制的内容形如多行 `key: value` 配置，含 `server_domain` / `api_key` / `api_secret`
 2. 按用户语言**把截图嵌在回复里**发给用户（红框即复制入口）。截图为在线图片链接（zh/en 各一张），SKILL.md 前置条件「凭证配置引导」已内嵌同样的图片链接，优先直接按那边的话术输出：
    - zh_CN: `![一键复制 skill 配置](https://img.alicdn.com/imgextra/i3/O1CN01Ow7zAMmLeBJ2Yc1a_!!6000000004199-2-tps-1260-734.png)`
    - en_US: `![Copy Skill Config](https://img.alicdn.com/imgextra/i1/O1CN0175UzeUMuM4D64tUK_!!6000000003951-2-tps-2994-1634.png)`
@@ -31,7 +31,7 @@
 ### Agent 写入规范（拿到用户粘贴的配置后执行）
 
 - **已有配置保护**：写入前先检查 `~/.qbi/config.yaml` 是否已存在且非空。用户提供了配置内容（粘贴或直接给出）本身即为明确的更新意图——直接按下条合并写入，**不要**先询问是否确认覆盖；写入后向用户说明动了哪些键，并带一句该文件可能被其他 Quick BI skill 共用、本次仅改提供的键（其余键不受影响）。仅当用户未提供任何配置内容时，才不得擅自创建、覆盖或修改
-- **写入位置**：从粘贴内容中提取 `server_domain` / `api_key` / `api_secret` / `user_token`（支持 `key: value`、`key：value`、`key=value` 等常见格式），写入 `~/.qbi/config.yaml`（不存在则创建，建议文件权限 600）。粘贴内容中不含的键不写入、不猜测；文件中已有的其他键保持不动。用户明确要求「只给当前项目用另一套凭证」时，改写入工作目录级 `<workspace>/.qbi/config.yaml`（不存在则创建）
+- **写入位置**：从粘贴内容中提取 `server_domain` / `api_key` / `api_secret`（支持 `key: value`、`key：value`、`key=value` 等常见格式），写入 `~/.qbi/config.yaml`（不存在则创建，建议文件权限 600）。粘贴内容中不含的键不写入、不猜测；文件中已有的其他键保持不动。用户明确要求「只给当前项目用另一套凭证」时，改写入工作目录级 `<workspace>/.qbi/config.yaml`（不存在则创建）
 - **写入后确认**：向用户说明写入了哪些配置项、写到了哪个文件，然后重跑原问数命令
 
 ### 方式二（兜底）：手工逐项提供
@@ -46,7 +46,7 @@ api_secret: <个人级 AccessKey>
 
 写入后重新执行原命令即可。用户要求切换环境/凭证时，更新该文件或改用 `QUICKBI_*` 环境变量覆盖即生效（环境变量优先级更高）。
 
-Skill 根目录的 `config.example.yaml` 是含全部键（含 `user_token` / `user_prompt` 可选项）的示例，可直接复制为 `~/.qbi/config.yaml` 或工作目录级 `<workspace>/.qbi/config.yaml` 后填写。
+Skill 根目录的 `config.example.yaml` 是含全部键的示例，可直接复制为 `~/.qbi/config.yaml` 或工作目录级 `<workspace>/.qbi/config.yaml` 后填写。
 
 ## 配置项一览
 
@@ -57,8 +57,6 @@ Skill 根目录的 `config.example.yaml` 是含全部键（含 `user_token` / `u
 | `server_domain` | `QUICKBI_SERVER_DOMAIN` | 无（必填） | QuickBI 服务域名，按实际环境填写（公网为 `https://bi.aliyun.com`；独立部署/专有云为部署地址） |
 | `api_key` | `QUICKBI_API_KEY` | 空 | 个人级 AccessId（**必配**） |
 | `api_secret` | `QUICKBI_API_SECRET` | 空 | 个人级 AccessKey（**必配**） |
-| `user_token` | - | 空 | 用户 token（可选；配置后随问数请求携带 user_id，以该用户身份取数） |
-| `user_prompt` | - | 空 | 用户提示词：业务口径/场景约束；由脚本自动拼在通用边界之后、用户问题之前 |
 
 ## 服务端侧前置条件
 

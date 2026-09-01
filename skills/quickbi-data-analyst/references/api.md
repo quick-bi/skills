@@ -28,13 +28,13 @@
 
 - 签名：`X-Gw-AccessId` / `X-Gw-Nonce` / `X-Gw-Timestamp` / `X-Gw-Signature` 四头 HmacSHA256（签名串 = METHOD + URI + 排序后 query + X-Gw 头，RFC3986 编码后 HMAC-SHA256 + base64；body 不参与签名）
 - 凭证：三级来源，`QUICKBI_*` 环境变量 > `<workspace>/.qbi/config.yaml` > `~/.qbi/config.yaml`（详见 `setup.md`），**无试用凭证**；`api_key`/`api_secret` 必须为个人级 AK
-- `user_token`（可选）：配置后在提交请求 body 中携带 `user_id`
+- 提交请求 body 恒携带 `user_id`，值即个人级 AccessId（`api_key`），服务端以该用户身份取数
 
 ## 入参
 
 | 参数 | 类型 | 默认 | 说明 |
 | --- | --- | --- | --- |
-| `--message` | string | - | 用户问题原文（纯文本）。**脚本会自动在前面拼接系统提示词与用户提示词**，故可用长度 = 10000 − 提示词前缀长度，超限报 `CONFIG_MISSING`（exit 2） |
+| `--message` | string | - | 用户问题原文（纯文本）。**脚本会自动在前面拼接系统提示词**，故可用长度 = 10000 − 提示词前缀长度，超限报 `CONFIG_MISSING`（exit 2） |
 | `--session-id` | string | - | 复用会话（多轮上下文 / 继续读取同一轮结果），值来自上一轮出参 `sessionId` |
 | `--conversation-id` | string | - | 只挂流不提交（断点恢复），值来自本次提交的 `conversationId` |
 | `--workspace-dir` | path | `WORKSPACE_DIR` 环境变量或当前目录 | 用户工作目录：决定工作目录级配置层 `<dir>/.qbi/config.yaml` |
@@ -44,7 +44,7 @@
 | `--cursor` | string | - | `--stream-step` 续传游标，传上一段返回的 `cursor`（SSE event id / Last-Event-ID） |
 | `--cancel` | flag | 关 | 取消进行中的对话（必须 `--session-id` 指定） |
 | `--submit-timeout` | int | 60 | 提交请求超时秒数 |
-| `--no-guard` | flag | 关 | **仅排障用**：不拼接系统提示词与用户提示词，正常链路不要使用 |
+| `--no-guard` | flag | 关 | **仅排障用**：不拼接系统提示词，正常链路不要使用 |
 
 组合规则：
 
@@ -55,12 +55,11 @@
 
 ## 提示词拼接模型（脚本自动处理，每轮提交都带）
 
-提交给服务端的 message = 系统提示词 + 用户提示词 + 用户问题原文。
+提交给服务端的 message = 系统提示词 + 用户问题原文。
 
 - 系统提示词固定在 `chat.py` 中，承载通用系统级边界：仅限问数、禁止非问数工具、禁止不可渲染的交互组件（卡片/按钮/下拉）、只输出文字与 Markdown 表格
-- 用户提示词（`user_prompt`）来自配置文件，只承载客户/场景口径，可留空
 
-系统提示词、用户提示词与用户问题共享服务端 10000 字符上限。脚本按实际配置后的提示词前缀长度计算用户问题可用预算，超限报 `CONFIG_MISSING`。
+系统提示词与用户问题共享服务端 10000 字符上限。脚本按提示词前缀长度计算用户问题可用预算，超限报 `CONFIG_MISSING`。
 
 「只输出文字与 Markdown 表格」是本通道的能力边界：不产出图表、看板或任何可视化产物。用户点名要图表时，服务端照常给出文字与表格结论，并用一句话说明本通道仅输出文字与表格（不道歉、不展开技术原因）。
 
