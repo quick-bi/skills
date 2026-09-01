@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""quickbi-aipro 输出契约（仅依赖 Python 3.8+ 标准库；无 main，不可直接执行）。
+"""quickbi-data-analyst 输出契约（仅依赖 Python 3.8+ 标准库；无 main，不可直接执行）。
 
 所有入口脚本共用：
 - stdout 只输出契约定义的 JSON（emit/die）

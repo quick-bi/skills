@@ -1,4 +1,4 @@
-# 脚本接口契约（quickbi-aipro 问数）
+# 脚本接口契约（quickbi-data-analyst 问数）
 
 当前唯一入口脚本，Python 3.8+ 标准库即可运行：
 

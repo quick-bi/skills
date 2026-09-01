@@ -39,7 +39,7 @@ npx skills add https://gitee.com/quick-bi/skills.git --skill <skill-name>
 | 技能 | 说明 | 状态 |
 | --- | --- | --- |
 | [quickbi-custom-component](./skills/quickbi-custom-component/SKILL.md) | 从自然语言需求生成 Quick BI 自定义组件（图表 / 仪表板组件）——脚手架、组件 meta、DSL 绑定、校验与发布。 | 占位（开发中） |
-| [quickbi-aipro](./skills/quickbi-aipro/SKILL.md) | Quick BI AIPro 数据问答（问数）通道——将自然语言数据问题（指标、排名、趋势、占比、同环比）路由到 AIPro，以文字与表格形式返回分析结论。 | 可用 |
+| [quickbi-data-analyst](./skills/quickbi-data-analyst/SKILL.md) | Quick BI AIPro 数据问答（问数）通道——将自然语言数据问题（指标、排名、趋势、占比、同环比）路由到 AIPro，以文字与表格形式返回分析结论。 | 可用 |
 
 ## 贡献
 

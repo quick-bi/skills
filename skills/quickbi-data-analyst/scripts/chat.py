@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""quickbi-aipro 问数脚本（仅依赖 Python 3.8+ 标准库）。
+"""quickbi-data-analyst 问数脚本（仅依赖 Python 3.8+ 标准库）。
 
 链路：HmacSHA256 签名（X-Gw-* 四头）→ POST 异步提交（202）→
 GET SSE 流分段消费至 done（conversation_id 走 query 且参与签名；断线携
@@ -133,7 +133,7 @@ def cancel_chat(cfg, session_id):
 
 # ---------------------------- 主流程 ----------------------------
 def main():
-    parser = argparse.ArgumentParser(description="quickbi-aipro 问数")
+    parser = argparse.ArgumentParser(description="quickbi-data-analyst 问数")
     parser.add_argument("--message", help="用户问题原文（纯文本；脚本会自动加执行约束前缀）")
     parser.add_argument("--session-id", help="复用会话（多轮对话/补充追问信息）")
     parser.add_argument("--conversation-id", help="只挂流不提交（断点恢复）")

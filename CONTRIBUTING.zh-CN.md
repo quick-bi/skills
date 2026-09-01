@@ -46,9 +46,13 @@ version: 1.0.0
 
 不要在仓库根目录维护统一 changelog——用户通过 `npx skills add --skill <skill-name>` 按个安装，只有放在技能目录内的 changelog 才会被一起带走。
 
+## 模板
+
+`templates/setup.md` 是凭证接入的共性文案模板，含 `references/setup.md` 与 SKILL.md「前置条件」章节两部分。新建技能时复制填充，占位符与落地规则见文件顶部注释。技能各自打包分发，模板只在创作期使用。
+
 ## 发版
 
-以 `<skill-name>@<version>` 打 tag（如 `quickbi-aipro@1.1.0`）。推送 tag 会触发 GitHub 与 Gitee 上的 CI：把对应技能打包为 `<skill-name>-<version>.zip` 并挂到两端 Release。zip 内即技能文件夹本身，解压到智能体的技能目录即可完成安装。
+以 `<skill-name>@<version>` 打 tag（如 `quickbi-data-analyst@1.1.0`）。推送 tag 会触发 GitHub 与 Gitee 上的 CI：把对应技能打包为 `<skill-name>-<version>.zip` 并挂到两端 Release。zip 内即技能文件夹本身，解压到智能体的技能目录即可完成安装。
 
 本地构建：
 
