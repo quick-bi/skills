@@ -54,7 +54,7 @@ package.zip
 
 ### 3.3 meta.js 结构
 
-`meta.js` 由 `src/meta.ts` 编译产出，结构定义见 `refs/meta-and-coding.md`。
+`meta.js` 由 `src/meta.ts` 编译产出，结构定义见 `references/meta-and-coding.md`。
 
 ### 3.4 响应
 
@@ -148,9 +148,9 @@ curl -X POST "$GATEWAY/openapi/v2/abi/components/upload" \
 
 > 产物 URL **不校验安装/可见/启停**（分享场景直接可渲染）。
 
-## 9. MCP server 配置
+## 9. MCP server 接入
 
-配置模板见 SKILL.md「MCP 配置」节。agent 不索取、不代收、不回显任何凭证。
+在调用任何 `quickbi:*` 工具前，先按 `references/setup.md` 完成步骤 0 的安装与配置。MCP server 不可用、连接失败或鉴权失败时，返回步骤 0 后重试原操作。不得猜测或写死地址、索取凭证或回显用户提供的鉴权信息。
 
 ## 10. MCP 工具
 

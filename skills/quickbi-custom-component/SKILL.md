@@ -7,21 +7,25 @@ description: 开发 QuickBI AI Pro 仪表板自定义组件：脚手架新建、
 
 ## 意图路由
 
-| 用户意图   | 执行步骤   | 参考文件                                        |
-| ---------- | ---------- | ----------------------------------------------- |
-| 从零新建   | 1→2→3→4→5  | `refs/chart-libs.md`、`refs/meta-and-coding.md` |
-| 本地调试   | 4          | —                                               |
-| 只注册上传 | 5          | `refs/mcp-api.md`                               |
-| 查字段写法 | —          | `refs/meta-and-coding.md`                       |
-| 排查空白   | 见常见故障 | `refs/externals.md`                             |
+| 用户意图   | 执行步骤     | 参考文件                                                        |
+| ---------- | ------------ | --------------------------------------------------------------- |
+| 从零新建   | 0→1→2→3→4→5 | `references/chart-libs.md`、`references/meta-and-coding.md`    |
+| 本地调试   | 0→4          | `references/setup.md`                                          |
+| 只注册上传 | 0→5          | `references/setup.md`、`references/mcp-api.md`                 |
+| 查字段写法 | —            | `references/meta-and-coding.md`                                |
+| 排查空白   | 见常见故障   | `references/externals.md`                                      |
 
 意图不明确时先问。
 
+## 步骤 0：MCP 安装与配置
+
+首次使用本 Skill 时，先读 `references/setup.md`，通过当前 AI 客户端或 IDE 的 MCP 设置添加 `quickbi` MCP server。只有完整的 MCP server 定义才能配置；不得将仅含 AK 等凭证的普通配置猜测或转换为 MCP 地址、transport 或请求头。所有 `quickbi:*` 工具调用前必须完成本步骤；工具不可用、连接失败或鉴权失败时返回本步骤，完成配置后重试原操作。
+
 ## 步骤 1：需求澄清
 
-读 `refs/plan-template.md`，产出 `PLAN.md`，等用户确认后再动手。
+读 `references/plan-template.md`，产出 `PLAN.md`，等用户确认后再动手。
 
-选型：简单图形→纯 CSS；标准图表→echarts（预置库）；其他→写明理由。参考 `refs/chart-libs.md`。
+选型：简单图形→纯 CSS；标准图表→echarts（预置库）；其他→写明理由。参考 `references/chart-libs.md`。
 
 ## 步骤 2：脚手架
 
@@ -40,9 +44,9 @@ cd <组件名> && npm install
 
 ## 步骤 3：编码
 
-先查 `refs/chart-libs.md` 有无现成配方。
+先查 `references/chart-libs.md` 有无现成配方。
 
-核心契约（详见 `refs/meta-and-coding.md`）：
+核心契约（详见 `references/meta-and-coding.md`）：
 
 **meta.ts** — 类型 `AICustomComponentMeta`，核心字段 `dataSchema`（area 的 `description` 建议写，帮助 AI 召回）。必须用 `defineMeta` 包裹导出：
 
@@ -92,7 +96,7 @@ mount(props: Interfaces.LifecycleProps<Interfaces.AIComponentProps>) {
 - `encoding` — 区域 id → 列名数组
 - `dispatch?` — 交互出口（`select` / `cancelSelect` / `cancelDrill` / `cancelLinkage`）
 
-组件自行 `ResizeObserver` 管理尺寸。externals 规则见 `refs/externals.md`。
+组件自行 `ResizeObserver` 管理尺寸。externals 规则见 `references/externals.md`。
 
 ## 步骤 4：本地调试
 
@@ -103,7 +107,7 @@ mount(props: Interfaces.LifecycleProps<Interfaces.AIComponentProps>) {
 生成规则：
 
 1. 读 `qbi.config.ts` 的 `devServer`（默认 `https://127.0.0.1:8001`）拼出 `host`
-2. 读 `externals` 中的非沙箱内置库，为每个生成 `external_assets` 条目（CDN url 规则见 `refs/externals.md` §3）
+2. 读 `externals` 中的非沙箱内置库，为每个生成 `external_assets` 条目（CDN url 规则见 `references/externals.md` §3）
 3. `component_id` 固定为 `"mock"`（与调试 DSL 的 `component_ref` 一致）
 4. `assets` 的 url **必须写绝对路径**（`{host}/main.js`），相对路径会解析到主应用 origin 导致加载失败
 5. 文件名是 `usable`，**不带 `.json` 扩展名**（需匹配线上 API 路径 `/api/v2/abi/components/usable`）
@@ -265,7 +269,7 @@ npm run bundle   # → 工程根目录/{name}-{version}.zip（白名单：main.j
 将 bundle 产出的 zip 读取为 base64 字符串，连同 `external_assets` 一起传入。`external_assets` 来源：
 
 - **走过步骤 4**：取 `public/api/v2/abi/components/usable` 里 `data.components[0].external_assets`
-- **直接注册（未走步骤 4）**：读 `qbi.config.ts` 的 `externals`，剔除沙箱内置库（react / react-dom / lodash / moment / styled-components / SDK），剩余库按 `refs/externals.md` §3 的 CDN url 规则生成条目；若无第三方库则传空数组
+- **直接注册（未走步骤 4）**：读 `qbi.config.ts` 的 `externals`，剔除沙箱内置库（react / react-dom / lodash / moment / styled-components / SDK），剩余库按 `references/externals.md` §3 的 CDN url 规则生成条目；若无第三方库则传空数组
 
 剔除沙箱内置库后传入：
 
@@ -310,25 +314,9 @@ quickbi:create_preview({ spec, title }) → 线上公开链接
 
 > 如果线上效果有问题，回步骤 3 改代码，再走 5.1→5.4 重新上传，然后重新生成链接确认。
 
-## MCP 配置
+## MCP 接入异常
 
-```json
-{
-  "mcpServers": {
-    "quickbi": {
-      "url": "http://11.163.57.195/mcp",
-      "type": "http",
-      "headers": {
-        "x-quickbi-server-domain": "https://<环境域名>",
-        "x-quickbi-api-key": "<AK>",
-        "x-quickbi-api-secret": "<SK>"
-      }
-    }
-  }
-}
-```
-
-agent 不索取、不回显凭证。
+`quickbi` MCP server 不可用、连接失败或鉴权失败时，返回步骤 0，按 `references/setup.md` 重新完成配置后再重试原操作。不得猜测或写死地址、索取凭证或回显用户提供的鉴权信息。
 
 ## 常见故障
 
@@ -349,10 +337,11 @@ agent 不索取、不回显凭证。
 
 ## 参考文件
 
-- `refs/plan-template.md` — 计划模板
-- `refs/chart-libs.md` — 图表库选型与配方
-- `refs/meta-and-coding.md` — 契约与组件实现
-- `refs/mcp-api.md` — MCP 接口
-- `refs/externals.md` — externals 规则
+- `references/plan-template.md` — 计划模板
+- `references/chart-libs.md` — 图表库选型与配方
+- `references/meta-and-coding.md` — 契约与组件实现
+- `references/setup.md` — MCP 安装与配置
+- `references/mcp-api.md` — MCP 接口
+- `references/externals.md` — externals 规则
 - `scripts/preflight.mjs` — 构建前预检
 - `scripts/verify-build.mjs` — 构建后校验

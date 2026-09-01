@@ -8,7 +8,7 @@
 | **B** | echarts           | 低（需声明 external_assets，平台已知 CDN 地址） | 绝大多数标准图表，默认选这个 |
 | **C** | 其他库（d3/vega） | 高                                              | A/B 都做不到时用             |
 
-echarts 不是沙箱内置库，**必须在 `external_assets` 中声明**（平台已知其 CDN 地址，无额外加载风险）。沙箱内置库（react/lodash/moment 等）不写进 `external_assets`（完整清单见 `refs/externals.md` §2）。
+echarts 不是沙箱内置库，**必须在 `external_assets` 中声明**（平台已知其 CDN 地址，无额外加载风险）。沙箱内置库（react/lodash/moment 等）不写进 `external_assets`（完整清单见 `references/externals.md` §2）。
 
 ## echarts 坐标系支持
 
