@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""quickbi-aipro 凭证配置加载（仅依赖 Python 3.8+ 标准库；无 main，不可直接执行）。
+"""quickbi-data-analyst 凭证配置加载（仅依赖 Python 3.8+ 标准库；无 main，不可直接执行）。
 
 鉴权体系（无试用凭证）：
 - 凭证三级来源（高 → 低）：QUICKBI_* 环境变量（QUICKBI_SERVER_DOMAIN /

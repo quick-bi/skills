@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""quickbi-aipro SSE 流解析与分段消费（仅依赖 Python 3.8+ 标准库；无 main，不可直接执行）。
+"""quickbi-data-analyst SSE 流解析与分段消费（仅依赖 Python 3.8+ 标准库；无 main，不可直接执行）。
 
 问数结果的唯一消费路径：事件流解析（sse_iter）+ 分段累积
 （StreamStepAccumulator，message.stop 先缓存、后续事件决定回显或终态）+

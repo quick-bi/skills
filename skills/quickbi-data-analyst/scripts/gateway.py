@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""quickbi-aipro openapi 网关客户端（仅依赖 Python 3.8+ 标准库；无 main，不可直接执行）。
+"""quickbi-data-analyst openapi 网关客户端（仅依赖 Python 3.8+ 标准库；无 main，不可直接执行）。
 
 承载所有开放接口共用的网关机制：
 - 签名协议：X-Gw-* 四头 HmacSHA256（签名串 = METHOD + URI + 排序后 query

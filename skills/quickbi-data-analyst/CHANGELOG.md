@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.0] - 2026-09-01
+
+### Changed
+
+- 技能更名：`quickbi-aipro` → `quickbi-data-analyst`，突出“数据问答/问数”定位；目录、SKILL.md name、脚本与文档中的自称、README/CONTRIBUTING 中的引用一并更新。更名属破坏性变更，已安装旧名的环境需按新名重新安装
+
 ## [0.1.1] - 2026-08-31
 
 ### Fixed
