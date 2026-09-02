@@ -147,14 +147,23 @@ mount(props: Interfaces.LifecycleProps<Interfaces.AIComponentProps>) {
 
 > `external_assets` 根据实际 externals 填充，无第三方库时为空数组。模板脚手架**不自带此文件**，由 agent 在首次调试前生成。
 
-### 4.2 预检 + 启动 devServer
+### 4.2 启动前自检 + 启动 devServer
+
+启动前必须逐项核对，任一失败都不应启动：
+
+1. **工程结构完整**：存在 `package.json`、`src/meta.ts`、`src/index.ts`、`qbi.config.ts`。
+2. **`src/meta.ts` 已声明 `dataSchema.areas`**，且每个 area 都有 `id`。
+3. **`qbi.config.ts` 的 `devServer` 保持 https**，未显式降级为 `http`。
+4. **`qbi.config.ts` 的 `externals` 已正确声明**：
+   - 宿主内置库 `react`、`react-dom`、`lodash`、`moment` 可声明为 external；
+   - 第三方库（如 `echarts`）声明为 external 时，必须在 `public/api/v2/abi/components/usable` 的 `external_assets` 中提供 CDN url；
+   - Quick BI SDK 必须打入产物，不得配置为 external。
+5. **Node 版本 ≥ 22.20.0**（qdt 的 `engines` 硬性要求，低版本会直接报错）。
+6. **首次调试 / 改 externals 后**，`public/api/v2/abi/components/usable` 已按 4.1 节生成。
 
 ```bash
-node <skill_dir>/scripts/preflight.mjs   # 校验项目结构、meta.ts、externals 对齐
-npm run start                             # 启动 https://127.0.0.1:8001
+npm run start   # 启动 devServer（host:port 以 qbi.config.ts 中的 devServer 配置为准）
 ```
-
-> `<skill_dir>` 是本 SKILL 所在目录。预检失败时根据报错修复后再启动。
 
 devServer 透出以下内容供渲染侧读取：
 
@@ -261,11 +270,17 @@ quickbi:create_preview({ spec, title }) → { url, artifact_id, embed }
 
 ```bash
 npm run build    # → dist/main.js + dist/meta.js + dist/main.css（可选）+ dist/package.json（qdt 自动生成）
-node <skill_dir>/scripts/verify-build.mjs  # 校验产物完整性、体积、与源码一致
 npm run bundle   # → 工程根目录/{name}-{version}.zip（qdt 打包 dist/ 的全部直接子项）
 ```
 
-> `<skill_dir>` 是本 SKILL 所在目录。`qdt bundle` 不会再次构建；它会归档 `dist/` 的每个直接子项，所以不要往 `dist/` 放额外文件。verify-build 失败时根据报错修复后再 bundle。zip 文件名来自 `package.json` 的 `name-version`。`dist/package.json` 由 qdt 自动生成并随 zip 上传，无需处理。
+构建后必须逐项核对，任一失败都不应进入注册：
+
+1. **`dist/main.js` 与 `dist/meta.js` 存在且非空**。
+2. **`dist/` 下只有 qdt bundle 预期产物**：`main.js`、`meta.js`、`main.css`（可选）、`package.json`（qdt 自动生成）。不应出现源码、临时文件或其他多余内容。
+3. **产物总体积 ≤ 10MB**；若超出，检查是否漏写第三方库 externals。
+4. **`dist/meta.js` 与 `src/meta.ts` 的 area id 一致**：读取 `src/meta.ts` 中 `dataSchema.areas[*].id`，确认这些字符串都出现在 `dist/meta.js` 中，否则是旧产物，需重新 `npm run build`。
+
+> `qdt bundle` 不会再次构建；它会归档 `dist/` 的每个直接子项，所以不要往 `dist/` 放额外文件。zip 文件名来自 `package.json` 的 `name-version`。`dist/package.json` 由 qdt 自动生成并随 zip 上传，无需处理。
 
 ### 5.2 注册
 
@@ -350,6 +365,4 @@ quickbi:create_preview({ spec, title }) → 线上公开链接
 - `references/setup.md` — MCP 安装与配置
 - `references/mcp-api.md` — MCP 接口
 - `references/externals.md` — externals 规则
-- `scripts/preflight.mjs` — 构建前预检
-- `scripts/verify-build.mjs` — 构建后校验
-- `scripts/validation-utils.mjs` — 上两个脚本共用的校验规则（改契约时同步改这里）
+
