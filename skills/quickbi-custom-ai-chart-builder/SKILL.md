@@ -249,7 +249,7 @@ quickbi:create_preview({ spec, title }) → { url, artifact_id, embed }
 
 | 用户反馈     | 动作                                                      |
 | ------------ | --------------------------------------------------------- |
-| 要改         | 改代码 → 等 devServer 重新构建 → **手动刷新浏览器**（HMR 已禁用） |
+| 要改         | 改代码 → 等 devServer 重新构建 → **手动刷新浏览器**（qdt 内置 `hot: false`） |
 | OK，可以上线 | 进入步骤 5 注册                                           |
 | 方案不对     | 回步骤 1                                                  |
 
@@ -331,7 +331,7 @@ quickbi:create_preview({ spec, title }) → 线上公开链接
 | 组件空白不报错                                                       | `external_assets` 误写宿主内置的 react / react-dom / lodash / moment，或 SDK 被错误地配置为 external                              |
 | 字段变化后永久空白                                                   | 条件 return 换掉了图表容器 div                                                                                                          |
 | Vanilla 组件卸载后资源未清理                                         | 当前 Vanilla wrapper 调用实例的 `umount(props)`；清理逻辑写在 `unmount` 不会被调用                                                     |
-| 改完没生效                                                           | HMR 已禁用；等待 devServer 重建完成后手动刷新浏览器                                                                                     |
+| 改完没生效                                                           | qdt 内置 `hot: false`（产物是被平台页拉进去的 UMD 外部脚本，无法热替换）；等 devServer 重建完成后手动刷新浏览器                            |
 | 改完线上产物没生效                                                   | 没传 package_base64（不换包不切 revision）                                                                                              |
 | 平台显示文件名 `package.zip`                                         | 注册/更新时没传 `package_file_name`，必须传 bundle 产出的 zip 文件名                                                                    |
 | 产物体积偏大                                                         | 图表库漏写 externals                                                                                                                    |
