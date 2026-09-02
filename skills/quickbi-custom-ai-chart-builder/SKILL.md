@@ -1,6 +1,7 @@
 ---
 name: quickbi-custom-ai-chart-builder
 description: 开发 QuickBI AI Pro 仪表板自定义组件：脚手架新建、构建打包、注册上传。
+version: 0.1.0
 ---
 
 # QuickBI AI Pro 自定义组件开发
@@ -19,28 +20,32 @@ description: 开发 QuickBI AI Pro 仪表板自定义组件：脚手架新建、
 
 ## 步骤 0：MCP 安装与配置
 
-首次使用本 Skill 时，先读 `references/setup.md`，通过当前 AI 客户端或 IDE 的 MCP 设置添加 `quickbi` MCP server。只有完整的 MCP server 定义才能配置；不得将仅含 AK 等凭证的普通配置猜测或转换为 MCP 地址、transport 或请求头。所有 `quickbi:*` 工具调用前必须完成本步骤；工具不可用、连接失败或鉴权失败时返回本步骤，完成配置后重试原操作。
+首次使用本 Skill 时，先读 `references/setup.md`，通过当前 AI 客户端或 IDE 的 MCP 设置添加 `quickbi` MCP server。凭证由用户在 Quick BI 控制台点「一键复制 skill 配置」取得，`url` 与 `type` 按 `references/setup.md` 的映射规则填写；不得猜测域名或凭证。所有 `quickbi:*` 工具调用前必须完成本步骤；工具不可用、连接失败或鉴权失败时返回本步骤，完成配置后重试原操作。
 
 ## 步骤 1：需求澄清
 
 读 `references/plan-template.md`，产出 `PLAN.md`，等用户确认后再动手。
 
-选型：简单图形→纯 CSS；标准图表→echarts（预置库）；其他→写明理由。参考 `references/chart-libs.md`。
+选型：简单图形→纯 SVG/CSS；标准图表→echarts（需自备 CDN url）；其他→写明理由。参考 `references/chart-libs.md`。
 
 ## 步骤 2：脚手架
 
-```bash
-# React 版
-npx create-qbi-app@latest <组件名> --template ai-chart-react-ts
-# Vanilla 版
-npx create-qbi-app@latest <组件名> --template ai-chart-vanilla-ts
+`qbi-dev-tools` 的 `engines` 硬要求 **Node ≥ 22.20.0**（预检与构建都会在低版本上直接报错）。开工前先看 `node -v`，不达标先请用户升级。
 
-cd <组件名> && npm install
+```bash
+# 在目标工程的父目录运行；统一走官方 npm 源（`--registry` 必须放在包名之前）
+# React 版
+npx -y --registry=https://registry.npmjs.org create-qbi-app@latest <component-name> --template ai-chart-react-ts
+# Vanilla 版
+npx -y --registry=https://registry.npmjs.org create-qbi-app@latest <component-name> --template ai-chart-vanilla-ts
+
+cd <component-name> && npm install --registry=https://registry.npmjs.org
 ```
 
-> **注意**：`ai-chart-*` 模板尚未随 `create-qbi-app` 发布到 npm。如果 `npx` 报 `Expect the framework name to be within ...` 错误，说明安装的是旧版。此时改用 x
+> 官方源也拉不到含 AI 模板的版本时，不要反复重试或改用其他脚手架：把 `npm view create-qbi-app versions` 的结果告知用户，请其联系维护者重新发布。
 
-`create-qbi-app` 会自动将 `package.json` 的 `name` 设为项目名。脚手架**不会自动执行 `npm install`**，用户必须手动运行。写入 `PLAN.md`。后续所有命令均在组件目录下执行。
+> 组件名必须使用小写字母开头，后续仅含小写字母、数字、`_` 或 `-`，并至少两个字符。部分 CLI 版本只在交互输入时校验名称，**传入位置参数时不校验**；因此执行脚手架命令前必须由本 Skill 先校验，不合规就要求用户改名。脚手架不会自动执行 `npm install`。`create-qbi-app` 会将 `package.json` 的 `name` 设为项目名。写入 `PLAN.md`。后续所有命令均在组件目录下执行。
+>
 
 ## 步骤 3：编码
 
@@ -48,26 +53,26 @@ cd <组件名> && npm install
 
 核心契约（详见 `references/meta-and-coding.md`）：
 
-**meta.ts** — 类型 `AICustomComponentMeta`，核心字段 `dataSchema`（area 的 `description` 建议写，帮助 AI 召回）。必须用 `defineMeta` 包裹导出：
+**meta.ts** — 类型 `AIComponentMeta`，核心字段 `dataSchema`（area 的 `description` 建议写，帮助 AI 召回）。必须用 `defineMeta` 包裹导出；它是 SDK 的运行时导出，若当前安装的版本不导出它，说明装到了旧版，按步骤 2 带官方 registry 重装最新版：
 
 ```ts
 import type { Interfaces } from '@quickbi/bi-open-react-sdk'; // Vanilla 版用 '@quickbi/bi-open-sdk'
 import { defineMeta } from '@quickbi/bi-open-react-sdk'; // Vanilla 版用 '@quickbi/bi-open-sdk'
 
-export default defineMeta<Interfaces.AICustomComponentMeta>({
+export default defineMeta<Interfaces.AIComponentMeta>({
   dataSchema: {
     areas: [
       {
         id: 'area_row',
         name: '维度',
-        description: '分类轴',
+        description: '分类轴，绑定维度字段',
         queryAxis: 'row',
         rule: { required: true, maxColNum: 1, fieldTypes: ['dimension'] },
       },
       {
         id: 'area_column',
         name: '度量',
-        description: '数值字段',
+        description: '数值轴，绑定度量字段',
         queryAxis: 'column',
         rule: { required: true, maxColNum: 3, fieldTypes: ['measure'] },
       },
@@ -94,7 +99,9 @@ mount(props: Interfaces.LifecycleProps<Interfaces.AIComponentProps>) {
 
 - `data.values` — 行数组
 - `encoding` — 区域 id → 列名数组
-- `dispatch?` — 交互出口（`select` / `cancelSelect` / `cancelDrill` / `cancelLinkage`）
+- `dispatch?` — 交互出口：
+  - `select` 必须传 `{ type: 'select', payload: { dataIndex } }`，其中 `dataIndex` 是选中行在 `data.values` 中的下标
+  - `cancelSelect` / `cancelDrill` / `cancelLinkage` 不带 payload
 
 组件自行 `ResizeObserver` 管理尺寸。externals 规则见 `references/externals.md`。
 
@@ -102,12 +109,12 @@ mount(props: Interfaces.LifecycleProps<Interfaces.AIComponentProps>) {
 
 ### 4.1 生成 usable mock（首次调试 / 改 externals 后必做）
 
-根据 `qbi.config.ts` 的 `externals` 和 `devServer` 配置，生成 `public/api/v2/abi/components/usable`。此文件是线上 usable 接口的本地替身——devServer 将其作为静态文件透出，渲染层本地调试时读它获取组件资源地址和 external_assets。
+根据 `qbi.config.ts` 的 `externals` 和 `devServer` 配置，生成 `public/api/v2/abi/components/usable`。该文件是**本地调试 mock**：devServer 将它作为静态文件透出，调试 DSL 通过 `custom_components_api` 读取它加载本地产物；其路由与蛇形字段不代表线上接口契约。
 
 生成规则：
 
 1. 读 `qbi.config.ts` 的 `devServer`（默认 `https://127.0.0.1:8001`）拼出 `host`
-2. 读 `externals` 中的非沙箱内置库，为每个生成 `external_assets` 条目（CDN url 规则见 `references/externals.md` §3）
+2. 读 `externals` 中的非宿主内置库，为每个生成 `external_assets` 条目（CDN url 规则见 `references/externals.md`「第三方 external_assets」节）
 3. `component_id` 固定为 `"mock"`（与调试 DSL 的 `component_ref` 一致）
 4. `assets` 的 url **必须写绝对路径**（`{host}/main.js`），相对路径会解析到主应用 origin 导致加载失败
 5. 文件名是 `usable`，**不带 `.json` 扩展名**（需匹配线上 API 路径 `/api/v2/abi/components/usable`）
@@ -140,23 +147,32 @@ mount(props: Interfaces.LifecycleProps<Interfaces.AIComponentProps>) {
 
 > `external_assets` 根据实际 externals 填充，无第三方库时为空数组。模板脚手架**不自带此文件**，由 agent 在首次调试前生成。
 
-### 4.2 预检 + 启动 devServer
+### 4.2 启动前自检 + 启动 devServer
+
+启动前必须逐项核对，任一失败都不应启动：
+
+1. **工程结构完整**：存在 `package.json`、`src/meta.ts`、`src/index.ts`、`qbi.config.ts`。
+2. **`src/meta.ts` 已声明 `dataSchema.areas`**，且每个 area 都有 `id`。
+3. **`qbi.config.ts` 的 `devServer` 保持 https**，未显式降级为 `http`。
+4. **`qbi.config.ts` 的 `externals` 已正确声明**：
+   - 宿主内置库 `react`、`react-dom`、`lodash`、`moment` 可声明为 external；
+   - 第三方库（如 `echarts`）声明为 external 时，必须在 `public/api/v2/abi/components/usable` 的 `external_assets` 中提供 CDN url；
+   - Quick BI SDK 必须打入产物，不得配置为 external。
+5. **Node 版本 ≥ 22.20.0**（qdt 的 `engines` 硬性要求，低版本会直接报错）。
+6. **首次调试 / 改 externals 后**，`public/api/v2/abi/components/usable` 已按 4.1 节生成。
 
 ```bash
-node <skill_dir>/scripts/preflight.mjs   # 校验项目结构、meta.ts、externals 对齐
-npm run start                             # 启动 https://127.0.0.1:8001
+npm run start   # 启动 devServer（host:port 以 qbi.config.ts 中的 devServer 配置为准）
 ```
-
-> `<skill_dir>` 是本 SKILL 所在目录。预检失败时根据报错修复后再启动。
 
 devServer 透出以下内容供渲染侧读取：
 
 | 路径                            | 来源                                                              | 说明                           |
 | ------------------------------- | ----------------------------------------------------------------- | ------------------------------ |
-| `/main.js`                      | rspack 编译（`src/index.ts` entry）                               | 组件 UMD 产物                  |
-| `/meta.js`                      | rspack 编译（`src/meta.ts`，`qdt` 自动识别，无需在 entry 中声明） | 组件数据契约                   |
-| `/main.css`                     | rspack 从 BIComponent entry 中 import 的 `.scss` 提取             | 组件样式（可选）               |
-| `/api/v2/abi/components/usable` | `public/api/v2/abi/components/usable` 静态文件（步骤 4.1 生成）   | 本地替身：模拟线上 usable 接口 |
+| `/main.js`                      | `qbi.config.ts` 的 `BIComponent: './src/index.ts'` entry         | 组件 UMD 产物                  |
+| `/meta.js`                      | `qbi.config.ts` 的 `BIComponentMeta: './src/meta.ts'` entry      | 组件数据契约                   |
+| `/main.css`                     | `src/index.ts` 依赖链导入的样式                                  | 组件样式（可选）               |
+| `/api/v2/abi/components/usable` | `public/api/v2/abi/components/usable` 静态 mock                  | 本地调试组件清单               |
 
 启动后先用浏览器访问 `{devServerOrigin}`（从 `qbi.config.ts` 的 `devServer` 读取）并**接受 HTTPS 自签证书**，否则 QBI 页面 fetch 组件产物时会被浏览器拦截。
 
@@ -225,12 +241,12 @@ devServer 透出以下内容供渲染侧读取：
 ### 4.4 生成预览链接
 
 ```
-quickbi:create_preview({ spec, title }) → { url, artifactId }
+quickbi:create_preview({ spec, title }) → { url, artifact_id, embed }
 ```
 
 ### 4.5 打开本地调试链接（必做）
 
-直接用 `open` 打开 create_preview 返回的 url，**无需拼接额外 URL 参数**。DSL 中的 `custom_components_api` 已告知渲染层从本地 devServer 拉取组件，渲染层会：
+在 create_preview 返回的 url 后拼接 `?useComponent=local`（已有 query 则用 `&`），用 `open` 打开。渲染层会：
 
 1. 请求 `custom_components_api` 指定的地址 → 拿到 mock 组件列表
 2. 用 `component_ref`（`"mock"`）匹配到对应组件的 asset URL（`{devServerOrigin}/main.js` 等）
@@ -240,15 +256,11 @@ quickbi:create_preview({ spec, title }) → { url, artifactId }
 
 ### 4.6 调试迭代
 
-| 用户反馈     | 动作                                        |
-| ------------ | ------------------------------------------- |
-| 要改         | 改代码 → 刷新浏览器即可（devServer 热更新） |
-| OK，可以上线 | 进入步骤 5 注册                             |
-| 方案不对     | 回步骤 1                                    |
-
-### 4.7 常见调试问题
-
-见底部「常见故障」表。
+| 用户反馈     | 动作                                                      |
+| ------------ | --------------------------------------------------------- |
+| 要改         | 改代码 → 等 devServer 重新构建 → **手动刷新浏览器**（qdt 内置 `hot: false`） |
+| OK，可以上线 | 进入步骤 5 注册                                           |
+| 方案不对     | 回步骤 1                                                  |
 
 ## 步骤 5：注册上传
 
@@ -257,31 +269,37 @@ quickbi:create_preview({ spec, title }) → { url, artifactId }
 ### 5.1 构建 + 打包
 
 ```bash
-npm run build    # → dist/main.js + dist/meta.js + dist/main.css(可选)
-node <skill_dir>/scripts/verify-build.mjs  # 校验产物完整性、体积、externals
-npm run bundle   # → 工程根目录/{name}-{version}.zip（白名单：main.js + meta.js + main.css）
+npm run build    # → dist/main.js + dist/meta.js + dist/main.css（可选）+ dist/package.json（qdt 自动生成）
+npm run bundle   # → 工程根目录/{name}-{version}.zip（qdt 打包 dist/ 的全部直接子项）
 ```
 
-> `<skill_dir>` 是本 SKILL 所在目录。verify-build 失败时根据报错修复后再 bundle。zip 文件名来自 `package.json` 的 `name-version`。
+构建后必须逐项核对，任一失败都不应进入注册：
+
+1. **`dist/main.js` 与 `dist/meta.js` 存在且非空**。
+2. **`dist/` 下只有 qdt bundle 预期产物**：`main.js`、`meta.js`、`main.css`（可选）、`package.json`（qdt 自动生成）。不应出现源码、临时文件或其他多余内容。
+3. **产物总体积 ≤ 10MB**；若超出，检查是否漏写第三方库 externals。
+4. **`dist/meta.js` 与 `src/meta.ts` 的 area id 一致**：读取 `src/meta.ts` 中 `dataSchema.areas[*].id`，确认这些字符串都出现在 `dist/meta.js` 中，否则是旧产物，需重新 `npm run build`。
+
+> `qdt bundle` 不会再次构建；它会归档 `dist/` 的每个直接子项，所以不要往 `dist/` 放额外文件。zip 文件名来自 `package.json` 的 `name-version`。`dist/package.json` 由 qdt 自动生成并随 zip 上传，无需处理。
 
 ### 5.2 注册
 
 将 bundle 产出的 zip 读取为 base64 字符串，连同 `external_assets` 一起传入。`external_assets` 来源：
 
 - **走过步骤 4**：取 `public/api/v2/abi/components/usable` 里 `data.components[0].external_assets`
-- **直接注册（未走步骤 4）**：读 `qbi.config.ts` 的 `externals`，剔除沙箱内置库（react / react-dom / lodash / moment / styled-components / SDK），剩余库按 `references/externals.md` §3 的 CDN url 规则生成条目；若无第三方库则传空数组
+- **直接注册（未走步骤 4）**：读 `qbi.config.ts` 的 `externals`，剔除宿主内置的 `react`、`react-dom`、`lodash`、`moment`，剩余库按 `references/externals.md`「第三方 external_assets」节的 CDN url 规则生成条目；若无第三方库则传空数组。Quick BI SDK 必须打入产物，不能配置为 external
 
-剔除沙箱内置库后传入：
+仅传非宿主内置的第三方库：
 
 ```
 quickbi:register_custom_component({
   name,
   package_base64,        // zip 文件的 base64 编码
-  package_file_name,     // ⚠️ 必传！用 bundle 产出的 zip 文件名，否则平台记录为 "package.zip"
+  package_file_name,     // zip 文件名，强烈建议传（见下）
   desc,
-  external_assets        // 沙箱内置库不传（react/lodash/moment/styled-components/SDK）
+  external_assets        // 仅非宿主第三方库；SDK 不得 externalize
 })
-→ componentId + jsUrl + metaJsUrl（上传即生效，无需 release）
+→ componentId + jsUrl + metaJsUrl（上传即生效）
 ```
 
 ### 5.3 更新已有组件
@@ -290,14 +308,14 @@ quickbi:register_custom_component({
 quickbi:update_custom_component({
   component_id,
   package_base64,       // 省略不更新产物，传了才切 revision
-  package_file_name,    // ⚠️ 同注册，必传正确文件名
+  package_file_name,    // 同注册，换包时一并传
   desc,                 // 省略保留现值
   external_assets       // 省略保留现值
 })
 → 合并语义，revisionChanged 标识是否切了版本
 ```
 
-**关键**：`package_file_name` 必须传 `npm run bundle` 产出的 zip 文件名（`{name}-{version}.zip`），不传则平台默认记录为 `package.zip`。
+**关于 `package_file_name`**：它在 MCP schema 里不是必填项，但不传平台会把文件名记为 `package.zip`。始终传 `npm run bundle` 产出的 `{name}-{version}.zip`。
 
 ### 5.4 打开线上公开链接（必做）
 
@@ -316,24 +334,28 @@ quickbi:create_preview({ spec, title }) → 线上公开链接
 
 ## MCP 接入异常
 
-`quickbi` MCP server 不可用、连接失败或鉴权失败时，返回步骤 0，按 `references/setup.md` 重新完成配置后再重试原操作。不得猜测或写死地址、索取凭证或回显用户提供的鉴权信息。
+`quickbi` MCP server 不可用、连接失败或鉴权失败时，返回步骤 0，按 `references/setup.md` 重新完成配置后再重试原操作。不得写死域名、逐项索取 AK/SK 或回显用户提供的鉴权信息。
 
 ## 常见故障
 
-| 现象                                                                 | 原因                                                                                                                            |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `npm install` 报 `ETARGET No matching version`                       | 模板 `package.json` 中的 SDK 版本尚未发布（如 `^3.0.4` 但最新只有 `3.0.3`）。用 `npm view <包名> versions` 查实际版本后手动修正 |
-| `qdt` 报 `ERR_MODULE_NOT_FOUND ... node_modules/dist/cli.cjs`        | 模板目录中残留了 `node_modules/`，脚手架复制时符号链接变成普通文件。删除项目 `node_modules/` 后重新 `npm install` 即可修复      |
-| `npx create-qbi-app` 报 `Expect the framework name to be within ...` | npm 上的 `create-qbi-app` 版本尚未包含 `ai-chart-*` 模板，改用 monorepo 内本地 CLI（见步骤 2 注意事项）                         |
-| 组件空白不报错                                                       | external_assets 误写沙箱内置库（react/lodash/moment 等）                                                                        |
-| 字段变化后永久空白                                                   | 条件 return 换掉了图表容器 div                                                                                                  |
-| 改完没生效                                                           | 没传 package_base64（不换包不切 revision）                                                                                      |
-| 平台显示文件名 `package.zip`                                         | 注册/更新时没传 `package_file_name`，必须传 bundle 产出的 zip 文件名                                                            |
-| 产物体积偏大                                                         | 图表库漏写 externals                                                                                                            |
-| 本地调试 `ERR_CERT_AUTHORITY_INVALID`                                | HTTPS 自签证书未信任，先浏览器打开 `{devServerOrigin}`（从 `qbi.config.ts` 读取）接受证书                                       |
-| 本地调试 `ERR_EMPTY_RESPONSE`                                        | devServer 未启动或证书未接受                                                                                                    |
-| CORS 报错                                                            | devServer 需 `Access-Control-Allow-Origin: *`                                                                                   |
-| 本地调试组件空白                                                     | `public/api/v2/abi/components/usable` 缺失或 external_assets 中 url 错误                                                        |
+| 现象                                                                 | 原因                                                                                                                                    |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm install` 报 `ETARGET No matching version`                       | 当前源上没有模板声明的 SDK 版本。带 `--registry=https://registry.npmjs.org` 重装；官方源也没有才记录 `npm view` 结果并请用户联系维护者，不要自行替换、降级或混用 SDK 版本 |
+| `qdt` 报 `ERR_MODULE_NOT_FOUND ... node_modules/dist/cli.cjs`        | 模板目录中残留了 `node_modules/`，脚手架复制时符号链接变成普通文件。删除项目 `node_modules/` 后重新 `npm install` 即可修复              |
+| 组件区域报「外部依赖加载失败: xxx 没有资源地址：接口层未提供 url」       | `external_assets` 条目漏了 `url`。每个非宿主内置库（包括 echarts）都必须带 CDN url，规则见 `references/externals.md`；用 update 接口只传 `external_assets` 即可补齐，不会切 revision |
+| 组件空白不报错                                                       | `external_assets` 误写宿主内置的 react / react-dom / lodash / moment，或 SDK 被错误地配置为 external                              |
+| 字段变化后永久空白                                                   | 条件 return 换掉了图表容器 div                                                                                                          |
+| Vanilla 组件卸载后资源未清理                                         | 当前 Vanilla wrapper 调用实例的 `umount(props)`；清理逻辑写在 `unmount` 不会被调用                                                     |
+| 改完没生效                                                           | qdt 内置 `hot: false`（产物是被平台页拉进去的 UMD 外部脚本，无法热替换）；等 devServer 重建完成后手动刷新浏览器                            |
+| 改完线上产物没生效                                                   | 没传 package_base64（不换包不切 revision）                                                                                              |
+| 平台显示文件名 `package.zip`                                         | 注册/更新时没传 `package_file_name`，必须传 bundle 产出的 zip 文件名                                                                    |
+| 产物体积偏大                                                         | 图表库漏写 externals                                                                                                                    |
+| 本地调试 `ERR_CERT_AUTHORITY_INVALID`                                | HTTPS 自签证书未信任，先浏览器打开 `{devServerOrigin}`（从 `qbi.config.ts` 读取）接受证书                                               |
+| 本地调试 `ERR_EMPTY_RESPONSE`                                        | devServer 未启动或证书未接受                                                                                                            |
+| CORS 报错 `Permission was denied for this request to access the 'loopback' address space` | 不是缺 CORS 头（qdt devServer 已自带 `Access-Control-Allow-Origin` 回显与 `Access-Control-Allow-Private-Network`）。实测：同一页面下 https 打 loopback 返 200，换成 http 就报这条 —— 因此该报错意味着请求走了 `http://`，而 devServer 只听 https。它总紧跟在上一行 `ERR_CERT_AUTHORITY_INVALID` 之后：先按上一行接受自签证书再硬刷，两条会一起消失 |
+| 本地调试组件空白                                                     | `public/api/v2/abi/components/usable` 缺失或 external_assets 中 url 错误                                                                |
+| `npx create-qbi-app` 报 `Unknown option --registry`                   | `--registry` 错放在包名之后，被当作 CLI 参数。必须放在包名之前：`npx -y --registry=<url> create-qbi-app@latest <name> --template ai-chart-react-ts` |
+| `npx create-qbi-app` 找不到 `ai-chart-*` 模板                        | 当前源拉到的是不含 AI 模板的旧版（表现为传 `--template` 后静默回退交互选择）。按步骤 2 带 `--registry=https://registry.npmjs.org` 重跑，官方源的 `create-qbi-app@latest` 含 `ai-chart-react-ts` 与 `ai-chart-vanilla-ts` |
 
 ## 参考文件
 
@@ -343,5 +365,4 @@ quickbi:create_preview({ spec, title }) → 线上公开链接
 - `references/setup.md` — MCP 安装与配置
 - `references/mcp-api.md` — MCP 接口
 - `references/externals.md` — externals 规则
-- `scripts/preflight.mjs` — 构建前预检
-- `scripts/verify-build.mjs` — 构建后校验
+
