@@ -1,6 +1,11 @@
 ---
 name: quickbi-custom-ai-chart-builder
-description: 开发 QuickBI AI Pro 仪表板自定义组件：脚手架新建、构建打包、注册上传。
+description: >-
+  开发 QuickBI AI Pro 仪表板自定义组件：脚手架新建、本地调试、构建打包、注册上传。
+
+  触发条件：用户明确要开发自定义图表组件、扩展现有组件、从零新建组件工程、本地调试自定义组件、将组件注册/上传到 QuickBI 平台，或排查自定义组件空白/加载失败/外部依赖缺失/字段映射错误等问题。
+
+  不触发条件：用户仅想用平台内置组件/控件制作普通仪表板；仅做数据问答、取数、生成分析报告；修改数据集结构、数据源配置或权限；以及与自定义组件开发无关的通用编码、文档写作或闲聊任务。
 version: 0.1.0
 ---
 
@@ -341,7 +346,6 @@ quickbi:create_preview({ spec, title }) → 线上公开链接
 | 现象                                                                 | 原因                                                                                                                                    |
 | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `npm install` 报 `ETARGET No matching version`                       | 当前源上没有模板声明的 SDK 版本。带 `--registry=https://registry.npmjs.org` 重装；官方源也没有才记录 `npm view` 结果并请用户联系维护者，不要自行替换、降级或混用 SDK 版本 |
-| `qdt` 报 `ERR_MODULE_NOT_FOUND ... node_modules/dist/cli.cjs`        | 模板目录中残留了 `node_modules/`，脚手架复制时符号链接变成普通文件。删除项目 `node_modules/` 后重新 `npm install` 即可修复              |
 | 组件区域报「外部依赖加载失败: xxx 没有资源地址：接口层未提供 url」       | `external_assets` 条目漏了 `url`。每个非宿主内置库（包括 echarts）都必须带 CDN url，规则见 `references/externals.md`；用 update 接口只传 `external_assets` 即可补齐，不会切 revision |
 | 组件空白不报错                                                       | `external_assets` 误写宿主内置的 react / react-dom / lodash / moment，或 SDK 被错误地配置为 external                              |
 | 字段变化后永久空白                                                   | 条件 return 换掉了图表容器 div                                                                                                          |
