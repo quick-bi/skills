@@ -6,8 +6,7 @@
   QUICKBI_API_KEY / QUICKBI_API_SECRET）→ <workspace>/.qbi/config.yaml
   （工作目录级）→ ~/.qbi/config.yaml（用户级）。
 - 必配项：server_domain（按实际环境填写；独立部署为部署地址）
-  与个人级 api_key / api_secret，任一缺失报 CONFIG_MISSING；
-  user_token 可选（配置后在问数请求中携带 userId）。
+  与个人级 api_key / api_secret，任一缺失报 CONFIG_MISSING。
 
 含一个零依赖的简易 YAML 解析器（仅覆盖本 skill 配置所需的子集）。
 """
@@ -127,8 +126,7 @@ def load_raw_config(workspace_dir=None):
     """加载原始配置：~/.qbi/config.yaml 打底，workspace 级配置按项覆盖，
     QUICKBI_* 环境变量最高优先级覆盖凭证三项。
 
-    环境变量只覆盖凭证三项；user_token / user_prompt 等其余配置项从
-    配置文件读取（workspace 级覆盖全局）。
+    环境变量只覆盖凭证三项。
     """
     raw = _read_yaml_file(USER_CONFIG_PATH)
     if workspace_dir:
@@ -152,11 +150,7 @@ def build_config(raw):
         "gateway": str(raw.get("server_domain") or "").strip().rstrip("/"),
         "accessId": str(raw.get("api_key") or ""),
         "accessKey": str(raw.get("api_secret") or ""),
-        "user_token": str(raw.get("user_token") or "").strip(),
     }
-    for optional_key in ("user_prompt", "userPrompt"):
-        if optional_key in raw and str(raw[optional_key]).strip():
-            cfg[optional_key] = raw[optional_key]
     if cfg["gateway"] and not cfg["gateway"].startswith(("http://", "https://")):
         cfg["gateway"] = "https://" + cfg["gateway"]
 
