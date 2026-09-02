@@ -261,7 +261,7 @@ quickbi:create_preview({ spec, title }) → { url, artifact_id, embed }
 
 ```bash
 npm run build    # → dist/main.js + dist/meta.js + dist/main.css（可选）+ dist/package.json（qdt 自动生成）
-node <skill_dir>/scripts/verify-build.mjs  # 校验产物完整性、体积、externals
+node <skill_dir>/scripts/verify-build.mjs  # 校验产物完整性、体积、与源码一致
 npm run bundle   # → 工程根目录/{name}-{version}.zip（qdt 打包 dist/ 的全部直接子项）
 ```
 
