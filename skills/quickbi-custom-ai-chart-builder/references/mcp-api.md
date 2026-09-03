@@ -244,3 +244,7 @@ MCP server 自动处理网关签名，agent 无需关心。凭证来源（优先
 ## 12. 降级方案：手工 JSON-RPC
 
 若 MCP 客户端调用超时，可手工走 Streamable HTTP JSON-RPC（三步握手：initialize → notifications/initialized → tools/call），每次请求带 `mcp-session-id` 响应头。`Accept` 必须含 `application/json` 与 `text/event-stream`。
+
+### 12.1 大产物 base64 传输
+
+`register_custom_component` / `update_custom_component` 的 `package_base64` 可达几万到几十万字符，手工誊写进 `CallMcpTool` 参数会损坏 zip。走 JSON-RPC 时应由脚本内部读取 zip 并转 base64 后直接传给 `tools/call`。

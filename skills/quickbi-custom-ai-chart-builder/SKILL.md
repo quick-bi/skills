@@ -227,7 +227,8 @@ devServer 透出以下内容供渲染侧读取：
 
 **DSL 要点**：
 
-- `custom_components_api` — 由 `qbi.config.ts` 的 `devServer` 配置拼接而成：`https://{host}:{port}/api/v2/abi/components/usable`（默认 `https://127.0.0.1:8001/api/v2/abi/components/usable`）。渲染层从该地址拉取组件列表而非后端 API。该字段不在 bi-dsl schema 中定义（纯调试用途），运行时从原始对象读取。**注册上线后务必删除此字段**
+- `custom_components_api` — 由 `qbi.config.ts` 的 `devServer` 配置拼接而成：`https://{host}:{port}/api/v2/abi/components/usable`（默认 `https://127.0.0.1:8001/api/v2/abi/components/usable`）。渲染层从该地址拉取组件列表而非后端 API。该字段不在 bi-dsl schema 中定义（纯调试用途），运行时从原始对象读取。**注册上线后务必删除此字段**。
+  > 该字段会导致 `check_spec` 在 `spec_rules` 段报 error，属于预期行为，无需据此认为 DSL 写错。
 - `component_ref` — 必须与 `public/api/v2/abi/components/usable` 里的 `component_id` 一致（模板默认均为 `"mock"`）。渲染层通过此 ID 从 mock 接口返回的组件列表中匹配到对应组件的 asset URL
 - `dataset_ref` 引用 `data_sources[].title`（不是 id）
 - `dimensions`/`measures` 是**对象数组**：`[{ "field": "字段名" }]`，不是字符串
@@ -289,7 +290,7 @@ npm run bundle   # → 工程根目录/{name}-{version}.zip（qdt 打包 dist/ �
 
 ### 5.2 注册
 
-将 bundle 产出的 zip 读取为 base64 字符串，连同 `external_assets` 一起传入。`external_assets` 来源：
+`package_base64` 必须由脚本/程序读取 `npm run bundle` 产出的 zip 并转 base64 后传入，禁止把大段 base64 手工誊写进 `CallMcpTool` 参数（逐字符转录会损坏 zip）。推荐在脚本内部完成「读 zip → base64 → JSON-RPC」链路；JSON-RPC 走法见 `references/mcp-api.md`「大产物 base64 传输」节。`external_assets` 来源：
 
 - **走过步骤 4**：取 `public/api/v2/abi/components/usable` 里 `data.components[0].external_assets`
 - **直接注册（未走步骤 4）**：读 `qbi.config.ts` 的 `externals`，剔除宿主内置的 `react`、`react-dom`、`lodash`、`moment`，剩余库按 `references/externals.md`「第三方 external_assets」节的 CDN url 规则生成条目；若无第三方库则传空数组。Quick BI SDK 必须打入产物，不能配置为 external
