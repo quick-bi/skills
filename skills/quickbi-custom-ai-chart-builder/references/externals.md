@@ -2,7 +2,7 @@
 
 > **何时读**：声明第三方图表库、还原线上组件依赖、或排查组件空白与预览白屏时。
 
-`qbi.config.ts` 的 `externals` 控制构建时不打包哪些依赖；注册参数与本地 usable mock 的 `external_assets` 告诉宿主如何加载第三方依赖。两者必须对齐。
+`qbi.config.ts` 的 `externals` 控制构建时不打包哪些依赖；上传参数与本地 usable mock 的 `external_assets` 告诉宿主如何加载第三方依赖。两者必须对齐。
 
 ## 模板预置与 SDK
 
@@ -47,7 +47,7 @@ externals: {
 
 url 生成规则：已知入口路径的库写精确路径（如 `echarts@6.1.0/dist/echarts.min.js`），其余用 `https://cdn.jsdelivr.net/npm/{name}@{version}`。版本从 package.json 或 lockfile 取精确值，不要用 `latest`，也不要猜路径。
 
-漏 `url` 的表现：组件区域显示「自定义组件加载失败：外部依赖加载失败: `<name>`: `<global>` 没有资源地址：接口层未提供 url，且它不是沙箱内置模块」。注册与更新两个接口都按此规则校验，`echarts` 也不例外。
+漏 `url` 的表现：组件区域显示「自定义组件加载失败：外部依赖加载失败: `<name>`: `<global>` 没有资源地址：接口层未提供 url，且它不是沙箱内置模块」。上传与更新两个接口都按此规则校验，`echarts` 也不例外。
 
 ## usable mock
 

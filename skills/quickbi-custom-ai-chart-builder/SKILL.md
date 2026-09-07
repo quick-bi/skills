@@ -1,15 +1,15 @@
 ---
 name: quickbi-custom-ai-chart-builder
 description: >-
-  开发 QuickBI AI Pro 仪表板自定义组件：脚手架新建、本地调试、构建打包、注册上传。
+  开发 QuickBI AI Pro 仪表板自定义图表：脚手架新建、本地调试、构建打包、上传发布。
 
-  触发条件：用户明确要开发自定义图表组件、扩展现有组件、从零新建组件工程、本地调试自定义组件、将组件注册/上传到 QuickBI 平台，或排查自定义组件空白/加载失败/外部依赖缺失/字段映射错误等问题。
+  触发条件：用户明确要开发自定义图表、扩展现有自定义图表、从零新建图表工程、本地调试自定义图表、将自定义图表上传到 QuickBI 平台，或排查自定义图表空白/加载失败/外部依赖缺失/字段映射错误等问题。
 
-  不触发条件：用户仅想用平台内置组件/控件制作普通仪表板；仅做数据问答、取数、生成分析报告；修改数据集结构、数据源配置或权限；以及与自定义组件开发无关的通用编码、文档写作或闲聊任务。
+  不触发条件：用户仅想用平台内置组件/控件制作普通仪表板；仅做数据问答、取数、生成分析报告；修改数据集结构、数据源配置或权限；以及与自定义图表开发无关的通用编码、文档写作或闲聊任务。
 version: 0.1.0
 ---
 
-# QuickBI AI Pro 自定义组件开发
+# QuickBI AI Pro 自定义图表开发
 
 ## 意图路由
 
@@ -17,13 +17,15 @@ version: 0.1.0
 | ---------- | ------------ | --------------------------------------------------------------- |
 | 从零新建   | 0→1→2→3→4→5 | `references/chart-libs.md`、`references/meta-and-coding.md`    |
 | 本地调试   | 0→4          | `references/setup.md`                                          |
-| 只注册上传 | 0→5          | `references/setup.md`、`references/mcp-api.md`                 |
+| 只上传     | 0→5          | `references/setup.md`、`references/mcp-api.md`                 |
 | 查字段写法 | —            | `references/meta-and-coding.md`                                |
 | 排查空白   | 见常见故障   | `references/externals.md`                                      |
 
 意图不明确时先问。
 
 ## 步骤 0：MCP 安装与配置
+
+开工前先**自己做一次探活预检**：调一次只读工具（`quickbi:list_custom_components`）。**探活成功就跳过步骤 0、直接进入步骤 1**；失败再按下方流程配置。
 
 首次使用本 Skill 时，先读 `references/setup.md`，通过当前 AI 客户端或 IDE 的 MCP 设置添加 `quickbi` MCP server。凭证由用户在 Quick BI 控制台点「一键复制 skill 配置」取得，`url` 与 `type` 按 `references/setup.md` 的映射规则填写；不得猜测域名或凭证。所有 `quickbi:*` 工具调用前必须完成本步骤；工具不可用、连接失败或鉴权失败时返回本步骤，完成配置后重试原操作。
 
@@ -227,7 +229,7 @@ devServer 透出以下内容供渲染侧读取：
 
 **DSL 要点**：
 
-- `custom_components_api` — 由 `qbi.config.ts` 的 `devServer` 配置拼接而成：`https://{host}:{port}/api/v2/abi/components/usable`（默认 `https://127.0.0.1:8001/api/v2/abi/components/usable`）。渲染层从该地址拉取组件列表而非后端 API。该字段不在 bi-dsl schema 中定义（纯调试用途），运行时从原始对象读取。**注册上线后务必删除此字段**。
+- `custom_components_api` — 由 `qbi.config.ts` 的 `devServer` 配置拼接而成：`https://{host}:{port}/api/v2/abi/components/usable`（默认 `https://127.0.0.1:8001/api/v2/abi/components/usable`）。渲染层从该地址拉取组件列表而非后端 API。该字段不在 bi-dsl schema 中定义（纯调试用途），运行时从原始对象读取。**上传后务必删除此字段**。
   > 该字段会导致 `check_spec` 在 `spec_rules` 段报 error，属于预期行为，无需据此认为 DSL 写错。
 - `component_ref` — 必须与 `public/api/v2/abi/components/usable` 里的 `component_id` 一致（模板默认均为 `"mock"`）。渲染层通过此 ID 从 mock 接口返回的组件列表中匹配到对应组件的 asset URL
 - `dataset_ref` 引用 `data_sources[].title`（不是 id）
@@ -242,7 +244,7 @@ devServer 透出以下内容供渲染侧读取：
 | ------------------------------------- | ------------------ | -------- |
 | `public/api/v2/abi/components/usable` | `component_id`     | `"mock"` |
 | 调试 DSL `ui.components[]`            | `component_ref`    | `"mock"` |
-| 注册后替换为                          | 真实 `componentId` | —        |
+| 上传后替换为                          | 真实 `componentId` | —        |
 
 ### 4.4 生成预览链接
 
@@ -265,12 +267,12 @@ quickbi:create_preview({ spec, title }) → { url, artifact_id, embed }
 | 用户反馈     | 动作                                                      |
 | ------------ | --------------------------------------------------------- |
 | 要改         | 改代码 → 等 devServer 重新构建 → **手动刷新浏览器**（qdt 内置 `hot: false`） |
-| OK，可以上线 | 进入步骤 5 注册                                           |
+| OK，可以上线 | 进入步骤 5 上传                                           |
 | 方案不对     | 回步骤 1                                                  |
 
-## 步骤 5：注册上传
+## 步骤 5：上传发布
 
-调试通过后，构建正式产物并注册到平台。
+调试通过后，构建正式产物并上传到平台。
 
 ### 5.1 构建 + 打包
 
@@ -279,7 +281,7 @@ npm run build    # → dist/main.js + dist/meta.js + dist/main.css（可选）+ 
 npm run bundle   # → 工程根目录/{name}-{version}.zip（qdt 打包 dist/ 的全部直接子项）
 ```
 
-构建后必须逐项核对，任一失败都不应进入注册：
+构建后必须逐项核对，任一失败都不应进入上传：
 
 1. **`dist/main.js` 与 `dist/meta.js` 存在且非空**。
 2. **`dist/` 下只有 qdt bundle 预期产物**：`main.js`、`meta.js`、`main.css`（可选）、`package.json`（qdt 自动生成）。不应出现源码、临时文件或其他多余内容。
@@ -288,12 +290,12 @@ npm run bundle   # → 工程根目录/{name}-{version}.zip（qdt 打包 dist/ �
 
 > `qdt bundle` 不会再次构建；它会归档 `dist/` 的每个直接子项，所以不要往 `dist/` 放额外文件。zip 文件名来自 `package.json` 的 `name-version`。`dist/package.json` 由 qdt 自动生成并随 zip 上传，无需处理。
 
-### 5.2 注册
+### 5.2 上传
 
 `package_base64` 必须由脚本/程序读取 `npm run bundle` 产出的 zip 并转 base64 后传入，见 `references/mcp-api.md`「大产物 base64 传输」节。`external_assets` 来源：
 
 - **走过步骤 4**：取 `public/api/v2/abi/components/usable` 里 `data.components[0].external_assets`
-- **直接注册（未走步骤 4）**：读 `qbi.config.ts` 的 `externals`，剔除宿主内置的 `react`、`react-dom`、`lodash`、`moment`，剩余库按 `references/externals.md`「第三方 external_assets」节的 CDN url 规则生成条目；若无第三方库则传空数组。Quick BI SDK 必须打入产物，不能配置为 external
+- **直接上传（未走步骤 4）**：读 `qbi.config.ts` 的 `externals`，剔除宿主内置的 `react`、`react-dom`、`lodash`、`moment`，剩余库按 `references/externals.md`「第三方 external_assets」节的 CDN url 规则生成条目；若无第三方库则传空数组。Quick BI SDK 必须打入产物，不能配置为 external
 
 仅传非宿主内置的第三方库：
 
@@ -314,7 +316,7 @@ quickbi:register_custom_component({
 quickbi:update_custom_component({
   component_id,
   package_base64,       // 省略不更新产物，传了才切 revision
-  package_file_name,    // 同注册，换包时一并传
+  package_file_name,    // 同上传，换包时一并传
   desc,                 // 省略保留现值
   external_assets       // 省略保留现值
 })
@@ -325,7 +327,7 @@ quickbi:update_custom_component({
 
 ### 5.4 打开线上公开链接（必做）
 
-注册成功拿到 `componentId` 后，修改调试 DSL：
+上传成功拿到 `componentId` 后，修改调试 DSL：
 
 1. **删除** `ui.custom_components_api`（不再走本地 mock，改走后端 API）
 2. 将 `component_ref` 从 `"mock"` 改为真实 `componentId`
@@ -353,7 +355,7 @@ quickbi:create_preview({ spec, title }) → 线上公开链接
 | Vanilla 组件卸载后资源未清理                                         | 当前 Vanilla wrapper 调用实例的 `umount(props)`；清理逻辑写在 `unmount` 不会被调用                                                     |
 | 改完没生效                                                           | qdt 内置 `hot: false`（产物是被平台页拉进去的 UMD 外部脚本，无法热替换）；等 devServer 重建完成后手动刷新浏览器                            |
 | 改完线上产物没生效                                                   | 没传 package_base64（不换包不切 revision）                                                                                              |
-| 平台显示文件名 `package.zip`                                         | 注册/更新时没传 `package_file_name`，必须传 bundle 产出的 zip 文件名                                                                    |
+| 平台显示文件名 `package.zip`                                         | 上传/更新时没传 `package_file_name`，必须传 bundle 产出的 zip 文件名                                                                    |
 | 产物体积偏大                                                         | 图表库漏写 externals                                                                                                                    |
 | 本地调试 `ERR_CERT_AUTHORITY_INVALID`                                | HTTPS 自签证书未信任，先浏览器打开 `{devServerOrigin}`（从 `qbi.config.ts` 读取）接受证书                                               |
 | 本地调试 `ERR_EMPTY_RESPONSE`                                        | devServer 未启动或证书未接受                                                                                                            |
