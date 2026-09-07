@@ -24,8 +24,8 @@
 
 1. 告知用户：登录 Quick BI 控制台后，点击**右上角头像**，在下拉菜单的「账号设置与管理」区域（「个人识别码」条目旁）点击「**一键复制 skill 配置**」——复制的内容形如多行 `key: value` 配置，含 `server_domain` / `api_key` / `api_secret`
 2. 按用户语言**把截图嵌在回复里**发给用户（红框即复制入口）。截图为在线图片链接（zh/en 各一张），SKILL.md 前置条件「凭证配置引导」已内嵌同样的图片链接，优先直接按那边的话术输出：
-   - zh_CN: `![一键复制 skill 配置](https://img.alicdn.com/imgextra/i3/O1CN01Ow7zAMmLeBJ2Yc1a_!!6000000004199-2-tps-1260-734.png)`
-   - en_US: `![Copy Skill Config](https://img.alicdn.com/imgextra/i1/O1CN0175UzeUMuM4D64tUK_!!6000000003951-2-tps-2994-1634.png)`
+   - zh_CN: `![一键复制 skill 配置](https://img.alicdn.com/imgextra/i2/O1CN01D2X3PpbghdG43lXk_!!6000000001662-2-tps-2000-1088.png)`
+   - en_US: `![Copy Skill Config](https://img.alicdn.com/imgextra/i2/O1CN012cmhTofGFED43lXl_!!6000000005965-2-tps-2000-1089.png)`
 3. 用户把复制到的内容**直接粘贴到对话里发回**，由你按下节规范写入配置文件
 
 ### Agent 写入规范（拿到用户粘贴的配置后执行）
