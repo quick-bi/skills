@@ -37,7 +37,7 @@ export default defineMeta<Interfaces.AIComponentMeta>({
 });
 ```
 
-`name` 和 `desc` 属于注册接口参数，不在 meta.ts 中定义。
+`name` 和 `desc` 属于上传接口参数，不在 meta.ts 中定义。
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |

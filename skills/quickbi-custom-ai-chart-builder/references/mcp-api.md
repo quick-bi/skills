@@ -1,6 +1,6 @@
-# 自定义组件 MCP API
+# 自定义图表 MCP API
 
-> **何时读**：步骤 5 注册/更新/预览，或首次配置 MCP server 时。
+> **何时读**：步骤 5 上传/更新/预览，或首次配置 MCP server 时。
 
 ## 1. 公共约定
 
@@ -16,7 +16,7 @@
 
 | 操作 | Method + Path                      | 格式      |
 | ---- | ---------------------------------- | --------- |
-| 注册 | `POST /upload`                     | multipart |
+| 上传 | `POST /upload`                     | multipart |
 | 更新 | `POST /update`                     | multipart |
 | 列表 | `GET /list?keyword&page&page_size` | query     |
 | 详情 | `GET /detail?component_id`         | query     |
@@ -24,7 +24,7 @@
 
 所有路径相对于前缀 `/openapi/v2/abi/components`。
 
-## 3. 注册（上传）
+## 3. 上传
 
 `POST /openapi/v2/abi/components/upload`（multipart/form-data）
 
@@ -90,9 +90,9 @@ curl -X POST "$GATEWAY/openapi/v2/abi/components/upload" \
 
 `POST /openapi/v2/abi/components/update`（multipart/form-data）
 
-字段同注册，额外需要 `component_id`（必填）。`package` / `desc` / `thumbnail` / `sourceArchive` 等**省略即不更新**（合并语义）。换 `package` 才切 `revision`。
+字段同上传，额外需要 `component_id`（必填）。`package` / `desc` / `thumbnail` / `sourceArchive` 等**省略即不更新**（合并语义）。换 `package` 才切 `revision`。
 
-响应同注册（含 `revisionChanged` 标志）。
+响应同上传（含 `revisionChanged` 标志）。
 
 ## 5. 列表
 
@@ -178,11 +178,11 @@ curl -X POST "$GATEWAY/openapi/v2/abi/components/upload" \
 | `name`                  | 否           | 未传保留现值                                            |
 | `desc`                  | 否           | 未传保留现值                                            |
 | `package_base64`        | 否           | 新产物 zip 的 Base64；省略不更新产物，传了才切 revision |
-| `package_file_name`     | 强烈建议     | 同注册：不传会被记为 `package.zip`。只有同时传 `package_base64` 时才有意义 |
+| `package_file_name`     | 强烈建议     | 同上传：不传会被记为 `package.zip`。只有同时传 `package_base64` 时才有意义 |
 | `external_assets`       | 否           | 未传保留现值                                            |
 | `source_archive_base64` | 否           | 未传保留现值                                            |
 
-合并语义：只传要改的字段。返回同 register（多一个 `revisionChanged` 标识）。
+合并语义：只传要改的字段。返回同 `register_custom_component`（多一个 `revisionChanged` 标识）。
 
 ### 10.3 `quickbi:list_custom_components`
 

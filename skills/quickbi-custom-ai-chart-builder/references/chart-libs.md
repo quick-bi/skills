@@ -11,7 +11,7 @@
 | B | ECharts | 大多数标准图表 |
 | C | d3 / Vega 等 | A、B 无法满足的定制图形 |
 
-ECharts、d3、Vega 都是第三方依赖：保留在 `package.json` 的 dependencies，配置 `externals`，并在本地 usable mock 和平台注册参数中声明对应 `external_assets`。宿主内置的 React、ReactDOM、lodash、moment 与必须打入产物的 Quick BI SDK 不属于这一类。
+ECharts、d3、Vega 都是第三方依赖：保留在 `package.json` 的 dependencies，配置 `externals`，并在本地 usable mock 和平台上传参数中声明对应 `external_assets`。宿主内置的 React、ReactDOM、lodash、moment 与必须打入产物的 Quick BI SDK 不属于这一类。
 
 ## ECharts 坐标系
 
