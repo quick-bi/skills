@@ -34,8 +34,8 @@
 2. 若该客户端支持 user、project、local 等多个配置范围，让用户选择。含鉴权信息的配置应保存在个人或本地私有范围；若该范围会同步、共享或提交到版本库，先提示凭证泄露风险。
 3. 引导用户取配置：登录 Quick BI 控制台 → 点**右上角头像** → 在「账号设置与管理」区域（「个人识别码」条目旁）点「**一键复制 skill 配置**」，把复制到的内容直接粘贴回对话。复制出的是多行 `key: value`，含 `server_domain` / `api_key` / `api_secret`。按用户语言把截图嵌在回复里（红框即入口）：
 
-   - zh_CN: `![一键复制 skill 配置](https://img.alicdn.com/imgextra/i3/O1CN01Ow7zAMmLeBJ2Yc1a_!!6000000004199-2-tps-1260-734.png)`
-   - en_US: `![Copy Skill Config](https://img.alicdn.com/imgextra/i1/O1CN0175UzeUMuM4D64tUK_!!6000000003951-2-tps-2994-1634.png)`
+   - zh_CN: `![一键复制 skill 配置](https://img.alicdn.com/imgextra/i2/O1CN01D2X3PpbghdG43lXk_!!6000000001662-2-tps-2000-1088.png)`
+   - en_US: `![Copy Skill Config](https://img.alicdn.com/imgextra/i2/O1CN012cmhTofGFED43lXl_!!6000000005965-2-tps-2000-1089.png)`
 
    用户已有完整 `mcpServers.quickbi` 配置时，直接用它，跳过本步。
 
