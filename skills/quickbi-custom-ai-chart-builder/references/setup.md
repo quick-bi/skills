@@ -10,7 +10,7 @@
 {
   "mcpServers": {
     "quickbi": {
-      "url": "<server_domain>",
+      "url": "<server_domain>/mcp",
       "type": "https",
       "headers": {
         "x-quickbi-server-domain": "<server_domain>",
@@ -22,7 +22,7 @@
 }
 ```
 
-三个值取自控制台「一键复制 skill 配置」给出的 `server_domain` / `api_key` / `api_secret`（获取方式见步骤 0）：`url` 与 `x-quickbi-server-domain` 都填 `server_domain` 原样值，`type` 恒为 `https`。若用户环境的 MCP 独立部署并给了单独地址，`url` 以用户提供的为准。
+三个值取自控制台「一键复制 skill 配置」给出的 `server_domain` / `api_key` / `api_secret`（获取方式见步骤 0）：`url` 填 `server_domain` 去掉末尾 `/` 后拼接 `/mcp`，`x-quickbi-server-domain` 填 `server_domain` 原样值，`type` 恒为 `https`。若用户环境的 MCP 独立部署并给了单独地址，`url` 以用户提供的为准。
 
 此 JSON 是通用 MCP 配置结构。不同客户端可能要求整个 `mcpServers` 对象，也可能只要求其中的 `quickbi` server body；按当前客户端的 MCP 设置说明放入对应位置，但键名保持原样。
 
@@ -39,7 +39,7 @@
 
    用户已有完整 `mcpServers.quickbi` 配置时，直接用它，跳过本步。
 
-4. 按「配置前提」把粘贴内容组装成 `quickbi` server 定义：`url` 与 `x-quickbi-server-domain` 填 `server_domain`，`type` 填 `https`，两个 AK 填对应 header。server 名称固定为 `quickbi`。
+4. 按「配置前提」把粘贴内容组装成 `quickbi` server 定义：`url` 填 `server_domain` 去掉末尾 `/` 后拼接 `/mcp`，`x-quickbi-server-domain` 填 `server_domain` 原样值，`type` 填 `https`，两个 AK 填对应 header。server 名称固定为 `quickbi`。
 5. 通过当前客户端的 MCP 设置界面、配置命令或配置文件写入该 server，不要覆盖其他已有 MCP server。
 6. 按当前客户端的方式重新加载 MCP server 或重启客户端，并通过其工具列表、连接状态或一次只读的 Quick BI 工具调用确认 `quickbi` 已可用。
 7. 仅在 `quickbi` MCP 工具可用后重试被阻塞的原操作；未加载成功时，按当前客户端的报错或官方文档排查。
