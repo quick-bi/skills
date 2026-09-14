@@ -153,11 +153,11 @@ curl -X POST "$GATEWAY/openapi/v2/abi/components/upload" \
 
 ## 9. MCP server 接入
 
-在调用任何 `quickbi:*` 工具前，先按 `references/setup.md` 完成步骤 0 的安装与配置。MCP server 不可用、连接失败或鉴权失败时，返回步骤 0 后重试原操作。不得写死域名、逐项索取 AK/SK 或回显用户提供的鉴权信息。
+在调用任何 `quickbi-mcp:*` 工具前，先按 `references/setup.md` 完成步骤 0 的安装与配置。MCP server 不可用、连接失败或鉴权失败时，返回步骤 0 后重试原操作。不得写死域名、逐项索取 AK/SK 或回显用户提供的鉴权信息。
 
 ## 10. MCP 工具
 
-### 10.1 `quickbi:register_custom_component`
+### 10.1 `quickbi-mcp:register_custom_component`
 
 | 字段                    | 必填         | 说明                                                                                                        |
 | ----------------------- | ------------ | ----------------------------------------------------------------------------------------------------------- |
@@ -170,7 +170,7 @@ curl -X POST "$GATEWAY/openapi/v2/abi/components/upload" \
 
 返回 `{componentId, jsUrl, metaJsUrl, cssUrl, revision}`。**上传即生效，无需 release**。
 
-### 10.2 `quickbi:update_custom_component`
+### 10.2 `quickbi-mcp:update_custom_component`
 
 | 字段                    | 必填         | 说明                                                    |
 | ----------------------- | ------------ | ------------------------------------------------------- |
@@ -184,7 +184,7 @@ curl -X POST "$GATEWAY/openapi/v2/abi/components/upload" \
 
 合并语义：只传要改的字段。返回同 `register_custom_component`（多一个 `revisionChanged` 标识）。
 
-### 10.3 `quickbi:list_custom_components`
+### 10.3 `quickbi-mcp:list_custom_components`
 
 | 字段        | 必填 | 说明            |
 | ----------- | ---- | --------------- |
@@ -192,7 +192,7 @@ curl -X POST "$GATEWAY/openapi/v2/abi/components/upload" \
 | `page`      | 否   | 页码，从 1 开始 |
 | `page_size` | 否   | 每页条数，≤100  |
 
-### 10.4 `quickbi:get_custom_component_detail`
+### 10.4 `quickbi-mcp:get_custom_component_detail`
 
 | 字段           | 必填 | 说明        |
 | -------------- | ---- | ----------- |
@@ -200,7 +200,7 @@ curl -X POST "$GATEWAY/openapi/v2/abi/components/upload" \
 
 返回完整详情，含 `metaJsUrl`、`jsUrl`、`cssUrl`、`externalAssets`。
 
-### 10.5 `quickbi:delete_custom_component`
+### 10.5 `quickbi-mcp:delete_custom_component`
 
 | 字段           | 必填 | 说明        |
 | -------------- | ---- | ----------- |
@@ -208,7 +208,7 @@ curl -X POST "$GATEWAY/openapi/v2/abi/components/upload" \
 
 硬删，产物 URL 立即 404。不可逆。
 
-### 10.6 `quickbi:recall_assets`（步骤 4 调试用）
+### 10.6 `quickbi-mcp:recall_assets`（步骤 4 调试用）
 
 语义检索已学习的数据集，取回数据集名与字段清单。
 
@@ -220,7 +220,7 @@ curl -X POST "$GATEWAY/openapi/v2/abi/components/upload" \
 
 返回 `results[]`，每条含 `md_content`（字段清单）。从中提取数据集名与字段名用于 DSL 的 `dataset_ref` 和 `dimensions`/`measures`。
 
-### 10.7 `quickbi:create_preview`（步骤 4 调试用）
+### 10.7 `quickbi-mcp:create_preview`（步骤 4 调试用）
 
 把 DashboardSpec 保存为产物并签发预览票据。
 

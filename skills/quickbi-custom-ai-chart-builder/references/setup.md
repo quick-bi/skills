@@ -1,15 +1,15 @@
 # Quick BI MCP 接入指南
 
-> **何时读**：首次使用本 Skill 的步骤 0，或任一 `quickbi:*` 工具不可用、连接失败、鉴权失败时。
+> **何时读**：首次使用本 Skill 的步骤 0，或任一 `quickbi-mcp:*` 工具不可用、连接失败、鉴权失败时。
 
 ## 配置前提
 
-此 Skill 使用 HTTP transport 的 `quickbi` MCP server，结构如下；尖括号内的值都来自用户环境，示例不提供默认地址或凭证：
+此 Skill 使用 HTTP transport 的 `quickbi-mcp` MCP server，结构如下；尖括号内的值都来自用户环境，示例不提供默认地址或凭证：
 
 ```json
 {
   "mcpServers": {
-    "quickbi": {
+    "quickbi-mcp": {
       "url": "<server_domain>/mcp",
       "type": "https",
       "headers": {
@@ -24,7 +24,7 @@
 
 三个值取自控制台「一键复制 skill 配置」给出的 `server_domain` / `api_key` / `api_secret`（获取方式见步骤 0）：`url` 填 `server_domain` 去掉末尾 `/` 后拼接 `/mcp`，`x-quickbi-server-domain` 填 `server_domain` 原样值，`type` 恒为 `https`。若用户环境的 MCP 独立部署并给了单独地址，`url` 以用户提供的为准。
 
-此 JSON 是通用 MCP 配置结构。不同客户端可能要求整个 `mcpServers` 对象，也可能只要求其中的 `quickbi` server body；按当前客户端的 MCP 设置说明放入对应位置，但键名保持原样。
+此 JSON 是通用 MCP 配置结构。不同客户端可能要求整个 `mcpServers` 对象，也可能只要求其中的 `quickbi-mcp` server body；按当前客户端的 MCP 设置说明放入对应位置，但键名保持原样。
 
 `server_domain` / `api_key` / `api_secret` 任一缺失时回到步骤 0 让用户重新复制，不得猜测域名或凭证。
 
@@ -37,12 +37,12 @@
    - zh_CN: `![一键复制 skill 配置](https://img.alicdn.com/imgextra/i2/O1CN01D2X3PpbghdG43lXk_!!6000000001662-2-tps-2000-1088.png)`
    - en_US: `![Copy Skill Config](https://img.alicdn.com/imgextra/i2/O1CN012cmhTofGFED43lXl_!!6000000005965-2-tps-2000-1089.png)`
 
-   用户已有完整 `mcpServers.quickbi` 配置时，直接用它，跳过本步。
+   用户已有完整 `mcpServers.quickbi-mcp` 配置时，直接用它，跳过本步。
 
-4. 按「配置前提」把粘贴内容组装成 `quickbi` server 定义：`url` 填 `server_domain` 去掉末尾 `/` 后拼接 `/mcp`，`x-quickbi-server-domain` 填 `server_domain` 原样值，`type` 填 `https`，两个 AK 填对应 header。server 名称固定为 `quickbi`。
+4. 按「配置前提」把粘贴内容组装成 `quickbi-mcp` server 定义：`url` 填 `server_domain` 去掉末尾 `/` 后拼接 `/mcp`，`x-quickbi-server-domain` 填 `server_domain` 原样值，`type` 填 `https`，两个 AK 填对应 header。server 名称固定为 `quickbi-mcp`。
 5. 通过当前客户端的 MCP 设置界面、配置命令或配置文件写入该 server，不要覆盖其他已有 MCP server。
-6. 按当前客户端的方式重新加载 MCP server 或重启客户端，并通过其工具列表、连接状态或一次只读的 Quick BI 工具调用确认 `quickbi` 已可用。
-7. 仅在 `quickbi` MCP 工具可用后重试被阻塞的原操作；未加载成功时，按当前客户端的报错或官方文档排查。
+6. 按当前客户端的方式重新加载 MCP server 或重启客户端，并通过其工具列表、连接状态或一次只读的 Quick BI 工具调用确认 `quickbi-mcp` 已可用。
+7. 仅在 `quickbi-mcp` MCP 工具可用后重试被阻塞的原操作；未加载成功时，按当前客户端的报错或官方文档排查。
 
 ## 安全约束
 

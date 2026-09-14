@@ -25,9 +25,9 @@ version: 0.1.0
 
 ## 步骤 0：MCP 安装与配置
 
-开工前先**自己做一次探活预检**：调一次只读工具（`quickbi:list_custom_components`）。**探活成功就跳过步骤 0、直接进入步骤 1**；失败再按下方流程配置。
+开工前先**自己做一次探活预检**：调一次只读工具（`quickbi-mcp:list_custom_components`）。**探活成功就跳过步骤 0、直接进入步骤 1**；失败再按下方流程配置。
 
-首次使用本 Skill 时，先读 `references/setup.md`，通过当前 AI 客户端或 IDE 的 MCP 设置添加 `quickbi` MCP server。凭证由用户在 Quick BI 控制台点「一键复制 skill 配置」取得，`url` 与 `type` 按 `references/setup.md` 的映射规则填写；不得猜测域名或凭证。所有 `quickbi:*` 工具调用前必须完成本步骤；工具不可用、连接失败或鉴权失败时返回本步骤，完成配置后重试原操作。
+首次使用本 Skill 时，先读 `references/setup.md`，通过当前 AI 客户端或 IDE 的 MCP 设置添加 `quickbi-mcp` MCP server。凭证由用户在 Quick BI 控制台点「一键复制 skill 配置」取得，`url` 与 `type` 按 `references/setup.md` 的映射规则填写；不得猜测域名或凭证。所有 `quickbi-mcp:*` 工具调用前必须完成本步骤；工具不可用、连接失败或鉴权失败时返回本步骤，完成配置后重试原操作。
 
 ## 步骤 1：需求澄清
 
@@ -191,7 +191,7 @@ devServer 透出以下内容供渲染侧读取：
 
 ### 4.3 构造调试 DSL
 
-1. 用 `quickbi:recall_assets` 召回数据集，拿到 `origin_asset_id`（即 cubeId）和字段列表
+1. 用 `quickbi-mcp:recall_assets` 召回数据集，拿到 `origin_asset_id`（即 cubeId）和字段列表
 2. 根据 `src/meta.ts` 的 `dataSchema.areas` 选择合适的维度/度量字段
 3. 构造 DashboardSpec（注意 ID 前缀公约、dimensions/measures 必须是对象数组）：
 
@@ -249,7 +249,7 @@ devServer 透出以下内容供渲染侧读取：
 ### 4.4 生成预览链接
 
 ```
-quickbi:create_preview({ spec, title }) → { url, artifact_id, embed }
+quickbi-mcp:create_preview({ spec, title }) → { url, artifact_id, embed }
 ```
 
 ### 4.5 打开本地调试链接（必做）
@@ -300,7 +300,7 @@ npm run bundle   # → 工程根目录/{name}-{version}.zip（qdt 打包 dist/ �
 仅传非宿主内置的第三方库：
 
 ```
-quickbi:register_custom_component({
+quickbi-mcp:register_custom_component({
   name,
   package_base64,        // zip 文件的 base64 编码
   package_file_name,     // zip 文件名，强烈建议传（见下）
@@ -313,7 +313,7 @@ quickbi:register_custom_component({
 ### 5.3 更新已有组件
 
 ```
-quickbi:update_custom_component({
+quickbi-mcp:update_custom_component({
   component_id,
   package_base64,       // 省略不更新产物，传了才切 revision
   package_file_name,    // 同上传，换包时一并传
@@ -333,7 +333,7 @@ quickbi:update_custom_component({
 2. 将 `component_ref` 从 `"mock"` 改为真实 `componentId`
 
 ```
-quickbi:create_preview({ spec, title }) → 线上公开链接
+quickbi-mcp:create_preview({ spec, title }) → 线上公开链接
 ```
 
 用 `open` 打开线上公开链接，**等用户确认线上效果**。此链接从平台 CDN 加载组件产物，不依赖本地 devServer，可直接分享给任何人。
@@ -342,7 +342,7 @@ quickbi:create_preview({ spec, title }) → 线上公开链接
 
 ## MCP 接入异常
 
-`quickbi` MCP server 不可用、连接失败或鉴权失败时，返回步骤 0，按 `references/setup.md` 重新完成配置后再重试原操作。不得写死域名、逐项索取 AK/SK 或回显用户提供的鉴权信息。
+`quickbi-mcp` MCP server 不可用、连接失败或鉴权失败时，返回步骤 0，按 `references/setup.md` 重新完成配置后再重试原操作。不得写死域名、逐项索取 AK/SK 或回显用户提供的鉴权信息。
 
 ## 常见故障
 
