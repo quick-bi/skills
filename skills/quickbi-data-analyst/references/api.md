@@ -1,8 +1,8 @@
-# 脚本接口契约（quickbi-data-analyst 问数）
+# 脚本接口契约（quickbi-data-analyst 问数/仪表板）
 
 当前唯一入口脚本，Python 3.8+ 标准库即可运行：
 
-- `scripts/chat.py`：纯问数（提交 + SSE 分段消费），只输出文字与 Markdown 表格
+- `scripts/chat.py`：问数（文字与 Markdown 表格）+ 仪表板生成（`--dashboard`，解析 artifact-dashboard 产物并换票输出预览链接）
 
 依赖同目录基础模块（按机制拆分，后续新入口脚本共用）：`config_loader.py`（三级凭证加载）、`gateway.py`（签名/SSL/HTTP/错误映射）、`stream.py`（SSE 分段消费）、`output.py`（输出契约）。
 
@@ -35,6 +35,7 @@
 | 参数 | 类型 | 默认 | 说明 |
 | --- | --- | --- | --- |
 | `--message` | string | - | 用户问题原文（纯文本）。**脚本会自动在前面拼接系统提示词**，故可用长度 = 10000 − 提示词前缀长度，超限报 `CONFIG_MISSING`（exit 2） |
+| `--dashboard` | flag | 关 | 仪表板生成轮次：系统提示词改为约束服务端用 `qbi-dashboard-builder` 产出仪表板产物；纯问数轮次不要加。只影响提交，续读无需携带 |
 | `--session-id` | string | - | 复用会话（多轮上下文 / 继续读取同一轮结果），值来自上一轮出参 `sessionId` |
 | `--conversation-id` | string | - | 只挂流不提交（断点恢复），值来自本次提交的 `conversationId` |
 | `--workspace-dir` | path | `WORKSPACE_DIR` 环境变量或当前目录 | 用户工作目录：决定工作目录级配置层 `<dir>/.qbi/config.yaml` |
@@ -55,13 +56,12 @@
 
 ## 提示词拼接模型（脚本自动处理，每轮提交都带）
 
-提交给服务端的 message = 系统提示词 + 用户问题原文。
+提交给服务端的 message = 系统提示词（通用边界 + 模式规则）+ 用户问题原文。
 
-- 系统提示词固定在 `chat.py` 中，承载通用系统级边界：仅限问数、禁止非问数工具、禁止不可渲染的交互组件（卡片/按钮/下拉）、只输出文字与 Markdown 表格
+- 通用边界固定在 `chat.py` 中：能力范围限定问数与仪表板、禁止资产同步与建模/配置类操作及其他产物形式、数据结论用 Markdown 表格、禁止不可渲染的交互组件（卡片/按钮/下拉）
+- 模式规则按 `--dashboard` 切换：默认问数轮次（只输出文字与表格，不生成产物）；`--dashboard` 轮次（必须用 `qbi-dashboard-builder` 生成仪表板产物，不路由到 ai_html 等其他形式）
 
 系统提示词与用户问题共享服务端 10000 字符上限。脚本按提示词前缀长度计算用户问题可用预算，超限报 `CONFIG_MISSING`。
-
-「只输出文字与 Markdown 表格」是本通道的能力边界：不产出图表、看板或任何可视化产物。用户点名要图表时，服务端照常给出文字与表格结论，并用一句话说明本通道仅输出文字与表格（不道歉、不展开技术原因）。
 
 ## 出参：分段流式模式（`--stream-step`，stdout 单个 JSON）
 
@@ -87,6 +87,26 @@
 - `status=done`：`text` / `reply` 是最终答案；若后续直接到达 `message.complete`，脚本不会额外回显前一个 stop 缓存文本，避免重复展示；原样展示并结束本轮
 - `cursor` 是已处理完的最后一个 SSE event id，下一次作为 `--cursor` 传回，避免重复拼接
 - 脚本只拼接 `message.delta`；`thinking.*`、`tool.*` 默认不展示；最终答案优先使用 `message.complete.data.result`
+- `artifactFiltered: true`：text 中出现**非仪表板**产物标签或 HTML 内部注释（如 `<!--TABLE_TITLE:...-->`），脚本已过滤原文；照常展示 text/reply，不向用户提标签/产物
+
+### 仪表板产物字段（`dashboard`，检出 artifact-dashboard 标签时携带）
+
+服务端回复含 `<artifact-dashboard id="..." version="..." name="..." .../>` 标签时，脚本自动：① 从 text/reply 过滤该标签；② 调用换票接口 `POST /openapi/v2/abi/artifacts/embed-ticket`（body: `artifact_id` / `expire_minutes` / `ticket_num`，后两者来自 Skill 根目录 `settings.yaml`）签发免登票据；③ 把返回 `embed_url` 的 `artifactId` 参数改名为 `id` 并追加 `version`，得到预览链接；④ 按 `display_type` 预渲染可直接粘贴的展示片段：
+
+```json
+"dashboard": {
+  "artifactId": "产物 ID（内部字段，勿展示）",
+  "name": "看板名称（可展示）",
+  "displayType": "iframe 或 markdown（来自 settings.yaml 的 display_type，默认 iframe）",
+  "version": "产物版本（可能缺省）",
+  "url": "免登预览链接（iframe src / Markdown 链接地址）",
+  "render": "可直接粘贴的展示片段：iframe 模式为 iframe 标签 + 一行可点击链接兜底，markdown 模式为可点击链接",
+  "expireAt": "票据过期时间"
+}
+```
+
+- 换票失败不阻断主流程：`dashboard` 无 `url`/`render`，改携 `ticketError`（含 trace_id）；text/reply 照常展示，调用方降级为文字告知，**不要**自行拼接 URL
+- 每次加载/刷新看板消耗一次票据次数；票据失效时用同一 `--session-id` 加 `--dashboard` 重新提问即可重新签票
 
 ## 出参：取消模式（`--cancel`）
 

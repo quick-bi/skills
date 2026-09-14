@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0] - 2026-09-11
+
+### Added
+
+- 仪表板生成能力：chat.py 新增 `--dashboard` 轮次（系统提示词约束服务端用 `qbi-dashboard-builder` 产出仪表板产物）；解析回复中的 `<artifact-dashboard>` 标签，调用 `/openapi/v2/abi/artifacts/embed-ticket` 换票签发免登票据，出参新增 `dashboard` 字段（artifactId/name/displayType/url/render/expireAt，换票失败降级为 ticketError）
+- `dashboard.render`：脚本按 `display_type` 预渲染可直接粘贴的展示片段，调用方原样输出即可，避免自行拼装时包进代码块或改坏 URL；iframe 模式额外附一行可点击链接兜底——部分客户端不渲染内嵌 iframe，没有兜底入口时用户得追问一轮才能拿到地址
+- 仪表板预览设置独立放 Skill 根目录 `settings.yaml`（随包分发，默认值直写），与凭证 `config.yaml` 分离：`display_type`（iframe/markdown，默认 iframe）、`ticket_expire_minutes`（默认 99 年）、`ticket_num`（默认 99999）
+
+### Changed
+
+- 去掉「仅限问数」限制：系统提示词与 SKILL.md 能力边界改为问数 + 仪表板生成/修改；资产同步、建模/配置类操作与非仪表板产物仍不支持
+- reply 兜底过滤只针对非仪表板产物标签与 HTML 注释；artifact-dashboard 标签改走提取 + 换票链路
+
 ## [0.2.0] - 2026-09-01
 
 ### Changed

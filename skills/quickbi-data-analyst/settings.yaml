@@ -1,0 +1,10 @@
+# quickbi-data-analyst 仪表板预览设置（Skill 根目录，凭证仍在 config.yaml）
+
+# 展示类型：iframe（嵌入渲染）/ markdown（可点击链接）
+display_type: iframe
+
+# 看板嵌入票据有效期（分钟；99 年≈永久）
+ticket_expire_minutes: 52034400
+
+# 票据可用次数（1~99999；每次加载/刷新消耗一次）
+ticket_num: 99999

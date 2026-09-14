@@ -9,6 +9,7 @@
   与个人级 api_key / api_secret，任一缺失报 CONFIG_MISSING。
 
 含一个零依赖的简易 YAML 解析器（仅覆盖本 skill 配置所需的子集）。
+仪表板预览设置独立放 Skill 根目录 settings.yaml，见 load_settings。
 """
 import os
 
@@ -27,6 +28,15 @@ ENV_KEYS = {
     "api_key": "QUICKBI_API_KEY",
     "api_secret": "QUICKBI_API_SECRET",
 }
+
+# 换票默认参数（可用配置 ticket_expire_minutes / ticket_num 覆盖）：
+# ticket 每次 iframe 加载/刷新都会消耗一次，故默认有效期/次数都给到最大
+DEFAULT_TICKET_EXPIRE_MINUTES = 99 * 365 * 24 * 60  # 99 年，永久有效语义
+DEFAULT_TICKET_NUM = 99999            # 上限 99999 次
+
+# 仪表板展示类型（可用配置 display_type 覆盖）：iframe / markdown
+DEFAULT_DISPLAY_TYPE = "iframe"
+DISPLAY_TYPES = ("iframe", "markdown")
 
 
 # ---------------------------- 简易 YAML 解析 ----------------------------
@@ -172,3 +182,37 @@ def build_config(raw):
 def load_config(workspace_dir=None):
     """加载配置并归一化内部 cfg。"""
     return build_config(load_raw_config(workspace_dir))
+
+
+# ---------------------------- 仪表板预览设置 ----------------------------
+# Skill 根目录 settings.yaml（随包分发；缺失或缺键走代码默认值）
+SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SETTINGS_PATH = os.path.join(SKILL_DIR, "settings.yaml")
+
+
+def build_settings(raw):
+    """归一化仪表板预览设置：displayType/ticketNum/ticketExpireMinutes。"""
+    settings = {}
+    try:
+        settings["ticketExpireMinutes"] = int(raw.get("ticket_expire_minutes")
+                                              or DEFAULT_TICKET_EXPIRE_MINUTES)
+        settings["ticketNum"] = int(raw.get("ticket_num") or DEFAULT_TICKET_NUM)
+    except (TypeError, ValueError):
+        die("CONFIG_MISSING",
+            "ticket_expire_minutes / ticket_num 必须为整数",
+            "修正 %s 中的取值（分钟数 / 1~99999 次）" % SETTINGS_PATH,
+            exit_code=2)
+    settings["displayType"] = str(raw.get("display_type")
+                                  or DEFAULT_DISPLAY_TYPE).strip().lower()
+    if settings["displayType"] not in DISPLAY_TYPES:
+        die("CONFIG_MISSING",
+            "display_type 取值非法: %s" % settings["displayType"],
+            "可选值: %s（默认 %s）" % (" / ".join(DISPLAY_TYPES),
+                                       DEFAULT_DISPLAY_TYPE),
+            exit_code=2)
+    return settings
+
+
+def load_settings():
+    """加载仪表板预览设置（settings.yaml 缺失或为空时返回默认值）。"""
+    return build_settings(_read_yaml_file(SETTINGS_PATH))
