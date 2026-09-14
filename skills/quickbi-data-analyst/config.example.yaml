@@ -6,7 +6,8 @@
 # （逐项覆盖 ~/.qbi/config.yaml，用于多环境凭证隔离）
 #
 # 说明：
-# - 该文件可能与其他 Quick BI skill 共用，各自只读取自己认识的键，互不影响
+# - 该文件仅放鉴权凭证（多个 Quick BI skill 共用的凭证文件）；
+#   skill 自身设置放各 Skill 根目录的 settings.yaml，不写入本文件
 # - 环境变量 QUICKBI_SERVER_DOMAIN / QUICKBI_API_KEY / QUICKBI_API_SECRET
 #   优先级高于本文件（逐项生效）
 # - 凭证获取：登录 Quick BI 控制台 → 右上角头像 →「账号设置与管理」→

@@ -7,11 +7,12 @@ Quick BI skill 凭证接入模板（仅创作期使用；技能独立打包分�
 
 若技能有服务端侧前置条件（开通了什么能力、席位/权限、对应报错特征），落地时在第一部分末尾自行补一节「服务端侧前置条件」。
 
-模板只覆盖核心三键；技能若需额外配置键，落地后自行补充正文提及、配置项表与 config.example.yaml。
+模板只覆盖核心凭证三键；技能若需额外凭证键，落地后自行补充正文提及、配置项表与 config.example.yaml；非凭证的设置项放 Skill 根目录 settings.yaml（随包分发），不写入 config.yaml。
 
 已固化约定（勿逐技能改写；若新技能脚本的错误码、必填键与下述不同，落地后自行调整对应句子）：
   - 凭证三级来源：QUICKBI_* 环境变量 → <workspace>/.qbi/config.yaml → ~/.qbi/config.yaml
   - 基础必填键：server_domain / api_key / api_secret（个人级 AK）
+  - config.yaml 仅放鉴权凭证；技能自身设置放 Skill 根目录 settings.yaml（随包分发），不写入 config.yaml
   - 凭证类错误码：CONFIG_MISSING / AUTH_FAILED；不预检、不主动索取凭证，仅报错时引导
   - 控制台「一键复制 skill 配置」截图链接（zh/en）与 Agent 写入规范
 
@@ -68,11 +69,11 @@ api_secret: <个人级 AccessKey>
 
 写入后重新执行原命令即可。用户要求切换环境/凭证时，更新该文件或改用 `QUICKBI_*` 环境变量覆盖即生效（环境变量优先级更高）。
 
-Skill 根目录的 `config.example.yaml` 是含全部键的示例，可直接复制为 `~/.qbi/config.yaml` 或工作目录级 `<workspace>/.qbi/config.yaml` 后填写。
+Skill 根目录的 `config.example.yaml` 是含全部凭证键的示例，可直接复制为 `~/.qbi/config.yaml` 或工作目录级 `<workspace>/.qbi/config.yaml` 后填写。config.yaml 仅放鉴权凭证；技能自身设置放 Skill 根目录 `settings.yaml`，不写入 config.yaml。
 
 ## 配置项一览
 
-`~/.qbi/config.yaml` 中与本 Skill 相关的键（其余键互不干扰）：
+`~/.qbi/config.yaml` 中的凭证键：
 
 | 键 | 对应环境变量（优先级更高） | 默认 | 说明 |
 | --- | --- | --- | --- |

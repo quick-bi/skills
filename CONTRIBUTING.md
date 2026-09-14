@@ -50,6 +50,13 @@ Do not keep a single changelog at the repo root — users install individual ski
 
 `templates/setup.md` holds the shared credential-setup wording in two parts: `references/setup.md` and the SKILL.md "Prerequisites" section. Copy and fill it in when authoring a new skill; see the comment block at the top of the file for placeholders and rules. Skills ship as standalone packages, so the template is authoring-time only.
 
+## Configuration files
+
+The two configuration files serve distinct purposes and must not be mixed:
+
+- `config.yaml` (user-level `~/.qbi/config.yaml` or workspace-level `<workspace>/.qbi/config.yaml`) holds **credentials only**: `server_domain` / `api_key` / `api_secret`. It is a credential file shared across Quick BI skills — never add non-credential keys.
+- `settings.yaml` (skill root, shipped with the package) holds **skill-specific settings** (display options, ticket parameters, and other non-credential items); scripts fall back to built-in defaults when the file or a key is missing.
+
 ## Releases
 
 Tag releases as `<skill-name>@<version>` (e.g. `quickbi-data-analyst@1.1.0`). Pushing the tag triggers CI on GitHub and Gitee: the tagged skill is packaged into `<skill-name>-<version>.zip` and attached to the release on both platforms. The zip contains the skill folder itself, so unzipping into an agent's skills directory installs it.

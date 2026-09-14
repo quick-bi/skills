@@ -131,7 +131,7 @@
 | `NETWORK_ERROR` | - | 网络失败 / 请求超时 | 检查 server_domain 与网络连通性 |
 | `SERVER_ERROR` | 5xx | 服务端错误（或网关返回 HTML） | 携 traceId 报障；降低并发后重试 |
 | `BUSINESS_ERROR` | 200 | 网关级业务失败 / 服务端 error 事件 | 按 message 排查；携 traceId 报障 |
-| `CONFIG_MISSING` | - | 配置缺失（server_domain/api_key/api_secret）、参数不完整、message 超长（退出码 2） | 按 message 补全配置（环境变量或 ~/.qbi/config.yaml，见 setup.md）或精简内容 |
+| `CONFIG_MISSING` | - | 配置缺失（server_domain/api_key/api_secret；settings.yaml 取值非法）、参数不完整、message 超长（退出码 2） | 按 message 补全配置（凭证走环境变量或 ~/.qbi/config.yaml；设置项修正 Skill 根目录 settings.yaml，见 setup.md）或精简内容 |
 | `SSE_TIMEOUT` | - | 消费超时，**任务仍在后台执行** | `--conversation-id <本次 cid> --session-id <sessionId>` 继续读取，勿重新提交 |
 | `SSE_RECONNECT_EXHAUSTED` | - | 重连耗尽，**任务仍在后台执行** | 同上，继续传本次 `sessionId`，保持同一会话上下文 |
 | `ENV_NOT_ENABLED` | 200 | 该环境未开通该 API（AE0510010001/OE10010106） | 非 AK 问题：后端执行 init.sql 并等约 120s 配置缓存 |

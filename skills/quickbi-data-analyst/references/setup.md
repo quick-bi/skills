@@ -46,11 +46,11 @@ api_secret: <个人级 AccessKey>
 
 写入后重新执行原命令即可。用户要求切换环境/凭证时，更新该文件或改用 `QUICKBI_*` 环境变量覆盖即生效（环境变量优先级更高）。
 
-Skill 根目录的 `config.example.yaml` 是含全部键的示例，可直接复制为 `~/.qbi/config.yaml` 或工作目录级 `<workspace>/.qbi/config.yaml` 后填写。
+Skill 根目录的 `config.example.yaml` 是含全部凭证键的示例，可直接复制为 `~/.qbi/config.yaml` 或工作目录级 `<workspace>/.qbi/config.yaml` 后填写。config.yaml 仅放鉴权凭证；本 Skill 的仪表板预览设置放 Skill 根目录 `settings.yaml`，不写入 config.yaml。
 
 ## 配置项一览
 
-`~/.qbi/config.yaml` 中与本 Skill 相关的键（其余键互不干扰）：
+`~/.qbi/config.yaml` 中的凭证键：
 
 | 键 | 对应环境变量（优先级更高） | 默认 | 说明 |
 | --- | --- | --- | --- |
