@@ -62,8 +62,7 @@ SYSTEM_PROMPT_BASE = """【系统提示词｜系统级，优先级高于下方�
 
 SYSTEM_PROMPT_ANALYSIS = """4. 本轮为数据问答：只输出文字与 Markdown 表格结论，不要生成仪表板等任何产物；
    用户明确要求生成 HTML 报告/页面时，必须使用 qbi-grounded-report 生成单文件 HTML 报告
-   （结构与皮肤使用默认值，不发起交互确认）；用户明确要求生成报告文档时，
-   必须使用 qbi-doc-report 生成报告文档产物。
+   （结构与皮肤使用默认值，不发起交互确认）。
 """
 
 SYSTEM_PROMPT_DASHBOARD = """4. 本轮需生成仪表板：必须使用 qbi-dashboard-builder 生成仪表板产物。
@@ -76,11 +75,9 @@ def build_prompt_prefix(dashboard=False):
     return (SYSTEM_PROMPT_BASE + mode).strip() + "\n【用户问题】\n"
 
 
-# 产物标签处理：artifact-dashboard（仪表板）与 artifact-report（报告文档）为合法产物
-# （提取信息 + 换票拼链）；其余产物标签与 HTML 内部注释标记（如 <!--TABLE_TITLE:...-->）
-# 兜底过滤，不能把原文透给用户
+# 产物标签处理：artifact-dashboard（仪表板）为合法产物（提取信息 + 换票拼链）；
+# 其余产物标签与 HTML 内部注释标记（如 <!--TABLE_TITLE:...-->）兜底过滤，不能把原文透给用户
 ARTIFACT_DASHBOARD_RE = re.compile(r"<artifact-dashboard\b([^>]*?)/?>", re.IGNORECASE)
-ARTIFACT_REPORT_RE = re.compile(r"<artifact-report\b([^>]*?)/?>", re.IGNORECASE)
 ATTR_RE = re.compile(r"([\w-]+)\s*=\s*[\"']([^\"']*)[\"']")
 ARTIFACT_TAG_RE = re.compile(r"<\s*/?\s*artifact-[\w-]+\b[^>]*>", re.IGNORECASE)
 HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
@@ -94,7 +91,7 @@ def build_message(user_message, guard=True, dashboard=False):
 def strip_forbidden_markup(reply):
     """过滤非法产物标签与 HTML 注释（兜底）。返回 (clean_reply, filtered)。
 
-    调用前应先用 extract_dashboard / extract_report 提取合法产物；
+    调用前应先用 extract_dashboard 提取合法产物；
     走到这里仍残留的 artifact-* 标签均为不支持的产物形式。
     """
     if not (ARTIFACT_TAG_RE.search(reply) or HTML_COMMENT_RE.search(reply)):
@@ -142,13 +139,13 @@ def rename_query_param(url, old, new):
         query=urllib.parse.urlencode(pairs)))
 
 
-def build_render(display_type, name, url, emoji="📊"):
+def build_render(display_type, name, url):
     """预渲染可直接粘贴的展示片段，免去调用方自行拼装。
 
     iframe 模式额外附一行可点击链接：部分客户端不渲染内嵌 iframe，
     缺兜底入口时用户只能追问一轮才能拿到地址。
     """
-    link = "[%s 打开「%s」](%s)" % (emoji, name or "仪表板", url)
+    link = "[📊 打开「%s」](%s)" % (name or "仪表板", url)
     if display_type != "iframe":
         return link
     return ('<iframe src="%s" width="100%%" height="700" frameborder="0" '
@@ -196,37 +193,6 @@ def extract_dashboard(cfg, reply):
         log("换票失败（不阻断主流程）: %s" % ticket_err)
         dashboard["ticketError"] = ticket_err
     return clean, dashboard
-
-
-def extract_report(cfg, reply):
-    """提取 artifact-report 标签（qbi-doc-report 报告文档产物）并换票拼链。
-
-    返回 (clean_reply, report_or_None)：与仪表板共用 embed-ticket 换票接口，
-    embed_url 原样作为预览链接（不套用仪表板页面的参数改名约定）；
-    换票失败时 report 含 ticketError、无 url/render。
-    """
-    match = ARTIFACT_REPORT_RE.search(reply)
-    if not match:
-        return reply, None
-    attrs = dict(ATTR_RE.findall(match.group(1)))
-    if not attrs.get("id"):
-        return reply, None
-    clean = ARTIFACT_REPORT_RE.sub("", reply)
-    clean = re.sub(r"\n{3,}", "\n\n", clean).strip()
-    artifact_id = attrs["id"]
-    log("检测到报告文档产物 id=%s name=%s，已过滤标签，开始换票..."
-        % (artifact_id, attrs.get("name", "")))
-    ticket_data, ticket_err = create_embed_ticket(cfg, artifact_id)
-    report = {"name": attrs.get("name")}
-    if ticket_data:
-        report["url"] = ticket_data["embed_url"]
-        report["expireAt"] = ticket_data.get("expire_at")
-        report["render"] = build_render(cfg["displayType"], report["name"],
-                                        report["url"], emoji="📄")
-    else:
-        log("换票失败（不阻断主流程）: %s" % ticket_err)
-        report["ticketError"] = ticket_err
-    return clean, report
 
 
 # ---------------------------- HTTP ----------------------------
@@ -358,7 +324,6 @@ def main():
                                args.max_reconnects, cursor=args.cursor,
                                session_id=session_id)
     text, dashboard = extract_dashboard(cfg, step.get("text") or "")
-    text, report = extract_report(cfg, text)
     text, filtered = strip_forbidden_markup(text)
     result = {"type": "stream_step", "connected": True,
               "status": step["status"], "final": step["final"],
@@ -372,8 +337,6 @@ def main():
             result["html"] = html
     if dashboard:
         result["dashboard"] = dashboard
-    if report:
-        result["report"] = report
     if filtered:
         result["artifactFiltered"] = True
     if step["status"] == "error":

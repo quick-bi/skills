@@ -1,8 +1,8 @@
-# 脚本接口契约（quickbi-data-analyst 问数/HTML 报告/报告文档/仪表板）
+# 脚本接口契约（quickbi-data-analyst 问数/HTML 报告/仪表板）
 
 当前唯一入口脚本，Python 3.8+ 标准库即可运行：
 
-- `scripts/chat.py`：问数（文字与 Markdown 表格）+ HTML 报告（终态 files 解析免登预览/下载链接）+ 报告文档（解析 artifact-report 产物并换票输出预览链接）+ 仪表板生成（`--dashboard`，解析 artifact-dashboard 产物并换票输出预览链接）
+- `scripts/chat.py`：问数（文字与 Markdown 表格）+ HTML 报告（终态 files 解析免登预览/下载链接）+ 仪表板生成（`--dashboard`，解析 artifact-dashboard 产物并换票输出预览链接）
 
 依赖同目录基础模块（按机制拆分，后续新入口脚本共用）：`config_loader.py`（三级凭证加载）、`gateway.py`（签名/SSL/HTTP/错误映射）、`stream.py`（SSE 分段消费）、`output.py`（输出契约）。
 
@@ -59,7 +59,7 @@
 提交给服务端的 message = 系统提示词（通用边界 + 模式规则）+ 用户问题原文。
 
 - 通用边界固定在 `chat.py` 中：能力范围限定问数、HTML 报告与仪表板、禁止资产同步与建模/配置类操作及代码/文件导出等其他产物形式、数据结论用 Markdown 表格、禁止不可渲染的交互组件（卡片/按钮/下拉）
-- 模式规则按 `--dashboard` 切换：默认问数轮次（只输出文字与表格，不生成产物；用户明确要求 HTML 报告/页面时用 `qbi-grounded-report` 生成单文件 HTML 报告，结构与皮肤用默认值、不发起交互确认；用户明确要求报告文档时用 `qbi-doc-report` 生成报告文档产物）；`--dashboard` 轮次（必须用 `qbi-dashboard-builder` 生成仪表板产物，不路由到 ai_html 等其他形式）
+- 模式规则按 `--dashboard` 切换：默认问数轮次（只输出文字与表格，不生成产物；用户明确要求 HTML 报告/页面时用 `qbi-grounded-report` 生成单文件 HTML 报告，结构与皮肤用默认值、不发起交互确认）；`--dashboard` 轮次（必须用 `qbi-dashboard-builder` 生成仪表板产物，不路由到 ai_html 等其他形式）
 
 系统提示词与用户问题共享服务端 10000 字符上限。脚本按提示词前缀长度计算用户问题可用预算，超限报 `CONFIG_MISSING`。
 
@@ -126,22 +126,6 @@
 - `render` 为可点击链接的最终形态，调用方原样输出即可，不要用代码块包裹、不要改写链接
 - 预览/下载链接 24 小时有效；过期时用同一 `--session-id` 重新提问即可重新产出
 - 终态无 `.html` 文件时出参不带 `html` 字段；调用方照常展示 reply，不自行编造链接
-
-### 报告文档产物字段（`report`，检出 artifact-report 标签时携带）
-
-服务端回复含 `<artifact-report id="..." name="..." .../>` 标签（`qbi-doc-report` 产出，reply 常为纯标签）时，脚本自动：① 从 text/reply 过滤该标签；② 调用与仪表板相同的换票接口 `POST /openapi/v2/abi/artifacts/embed-ticket` 签发免登票据；③ 把返回 `embed_url` **原样**作为预览链接（不套用仪表板页面的参数改名约定）；④ 按 `display_type` 预渲染可直接粘贴的展示片段：
-
-```json
-"report": {
-  "name": "2025年销售分析报告",
-  "url": "https://...（换票接口返回的 embed_url 原样）",
-  "render": "[📄 打开「2025年销售分析报告」](https://...)",
-  "expireAt": "票据过期时间"
-}
-```
-
-- 换票失败不阻断主流程：`report` 无 `url`/`render`，改携 `ticketError`（含 trace_id）；reply 照常展示（纯标签轮次过滤后为空则跳过），调用方降级为文字告知，**不要**自行拼接 URL
-- 票据有效期与次数与仪表板共用 `settings.yaml` 设置；票据失效时用同一 `--session-id` 重新提问即可重新签票
 
 ## 出参：取消模式（`--cancel`）
 

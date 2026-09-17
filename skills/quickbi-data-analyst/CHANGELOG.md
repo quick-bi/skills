@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.0] - 2026-09-17
+
+### Removed
+
+- 移除报告文档通道：删除问数轮次对 `qbi-doc-report` 的点名与 `<artifact-report>` 标签解析/换票链路（`extract_report` 函数、出参 `report`、`build_render` emoji 参数）；用户要求报告文档时按能力边界话术回复，引导到 Quick BI 上实现
+
 ## [0.6.0] - 2026-09-17
 
 ### Changed
