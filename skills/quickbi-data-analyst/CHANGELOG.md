@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.6.0] - 2026-09-17
+
+### Changed
+
+- HTML 报告通道升级为可信报告：问数轮次点名 `qbi-grounded-report`（服务端完成 ABI 取数/派生、确定性门禁与一次快速质检后发布 `<报告标题>.report.html`），替换原 `qbi-streaming-html-report` 路由；结构与皮肤使用默认值、不发起交互确认（OpenAPI 通道禁止交互组件，服务端按内容形态自选结构）
+- 客户端出参链路不变：可信报告发布产物经终态 `data.files` 透出，`html[]`（name/url/download/render）解析与 24 小时链接时效规则保持原样；该轮 reply 为 2—4 句内容摘要（主题与数据范围、指标概览、核心洞察），照常原样展示
+
+## [0.5.0] - 2026-09-14
+
+### Added
+
+- HTML 报告与报告文档生成：放开系统提示词禁止网页的限制，问数轮次点名 `qbi-streaming-html-report`（单文件 HTML，默认布局配色、不交互确认）与 `qbi-doc-report`（报告文档产物）
+- 产物免登输出：终态 `data.files` 过滤 `.html` 交付文件（`.json` 中间产物不透出）出参 `html[]`（name/url/download/render，24 小时有效）；`<artifact-report>` 标签提取后共用 embed-ticket 换票出参 `report`（name/url/render/expireAt，失败降级 ticketError）
+
+### Changed
+
+- 能力边界第三类改为「代码、文件导出等其他产物形式」；HTML 报告/报告文档属问数轮次（不加 `--dashboard`），出参 render 原样输出不进代码块；`build_render` 增加 emoji 参数（仪表板 📊 / 报告文档 📄）
+
 ## [0.3.0] - 2026-09-11
 
 ### Added

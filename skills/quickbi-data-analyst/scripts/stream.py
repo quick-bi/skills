@@ -114,8 +114,11 @@ class StreamStepAccumulator:
             final_text = extract_text(obj) or self.pending_text or "".join(self.message_parts)
             self.pending_text = ""
             self.pending_cursor = None
+            files = ((obj.get("data") or {}).get("files")
+                     if isinstance(obj, dict) else None)
             return {"status": "done", "text": final_text, "cursor": self.cursor,
-                    "events": self.events, "final": True, "complete_confirmed": True}
+                    "events": self.events, "final": True, "complete_confirmed": True,
+                    "files": files if isinstance(files, list) else None}
         if self.pending_text and type_val and type_val != "heartbeat":
             text, cursor = self.pending_text, self.pending_cursor
             self.pending_text, self.pending_cursor = "", None
