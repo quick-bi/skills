@@ -135,7 +135,9 @@ curl -X POST "$GATEWAY/openapi/v2/abi/components/upload" \
 }
 ```
 
-`metaJson` 与组件绑定契约无关（实测为空对象）：组件的 `dataSchema` 走 `metaJsUrl` 指向的 `meta.js`，不要从 `metaJson` 读取。
+`metaJson` 与组件绑定契约无关（实测为空对象）：组件的 meta 声明（`schema` / `uiSchema`）走 `metaJsUrl` 指向的 `meta.js`，不要从 `metaJson` 读取。
+
+同理，**`metaJson`、`name`、`desc` 都不能充当能力来源**：槽位能否作为下钻来源（`meta.interaction.drill.channels`）只在 `meta.js` 里，名称/描述里写「支持下钻」不会让宿主多给一分能力。上传接口也**没有**声明能力的参数，不要臆造 `drill` / `capabilities` 类未经验证的上传字段。
 
 ## 7. 删除
 
@@ -184,6 +186,8 @@ curl -X POST "$GATEWAY/openapi/v2/abi/components/upload" \
 
 合并语义：只传要改的字段。返回同 `register_custom_component`（多一个 `revisionChanged` 标识）。
 
+**给旧组件补能力（如新加 `meta.interaction.drill.channels`）必须重传含 `meta.js` 与 `main.js` 的完整包**：能力写在 `meta.js` 里、点击上报写在 `main.js` 里，只改 `desc` 或 `name` 不会切 revision，宿主拉到的仍是旧产物，报表侧照旧配不出下钻。确认方式：响应的 `revisionChanged` 为 `true`，必要时再拉 `metaJsUrl` 回读确认声明已生效。
+
 ### 10.3 `quickbi-mcp:list_custom_components`
 
 | 字段        | 必填 | 说明            |
@@ -218,7 +222,7 @@ curl -X POST "$GATEWAY/openapi/v2/abi/components/upload" \
 | `top_k`     | 否   | 最大返回数，默认 5，建议 5~10      |
 | `asset_ids` | 否   | 限定范围的 asset_id 列表           |
 
-返回 `results[]`，每条含 `md_content`（字段清单）。从中提取数据集名与字段名用于 DSL 的 `dataset_ref` 和 `dimensions`/`measures`。
+返回 `results[]`，每条含 `md_content`（字段清单）。从中提取数据集名与字段名用于调试 spec 的 `dataset_ref` 和 `dimensions`/`measures`。
 
 ### 10.7 `quickbi-mcp:create_preview`（步骤 4 调试用）
 

@@ -51,12 +51,12 @@ url 生成规则：已知入口路径的库写精确路径（如 `echarts@6.1.0/
 
 ## usable mock
 
-`public/api/v2/abi/components/usable` 是 devServer 静态透出的**本地 mock**。它必须与调试 DSL 的 `ui.custom_components_api` 完全一致，但其路由和蛇形字段不构成线上接口契约。
+`public/api/v2/abi/components/usable` 是 devServer 静态透出的**本地 mock**。它必须与调试 spec 的 `ui.custom_components_api` 完全一致，但其路由和蛇形字段不构成线上接口契约。
 
 模板不自带该文件。首次平台本地调试前，根据 qbi.config.ts 生成：
 
 - assets URL 使用 qbi.config.ts 的完整 HTTPS origin，例如 `{devServerOrigin}/main.js`。
-- `component_id` 固定为 `mock`，与 DSL 的 `component_ref` 对齐。
+- `component_id` 固定为 `mock`，与调试 spec 的 `component_ref` 对齐。
 - `external_assets` 只包含第三方 externals；无第三方库时为空数组。
 - 改端口、host 或 externals 后同步更新 mock。
 

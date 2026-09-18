@@ -13,6 +13,7 @@
 | 组件形态 | 图表类型 / 视觉样式（环形柱图、日历热力图、指标卡…） | **必须问，不猜**                                                                                                                  |
 | 数据契约 | 需要几类字段、维度还是度量、各自最多几个             | 按图表类型给最小可用契约（1 维 + 1 度量）                                                                                         |
 | 技术选型 | React 还是 Vanilla、用哪个图表库                     | React + 纯 SVG/CSS（简单图形）或 echarts（标准图表），选型阶梯见图表库参考文档；**用户有意向的组件库/帮助文档时优先问并按其意向** |
+| 交互能力 | 是否要点击下钻，哪些槽位可作为下钻来源               | **默认不启用**；用户没提就只做行级 select（联动）                                    |
 | 交付边界 | 只本地预览，还是要上传发布到平台                     | 先做到本地预览，确认组件能正常加载                                                                                                  |
 
 > 允许在出计划前做的**只读**动作：读 `references/meta-and-coding.md`（契约权威）、用 `quickbi-mcp:list_custom_components` 查平台上同类组件作参考、**联网调研图表库能力（WebSearch/WebFetch 官方文档与示例）**。选型拿不准或用户可能有偏好时，把“有无意向组件库/帮助文档”合进一轮澄清提问。不允许建工程、写源码、装依赖。
@@ -33,52 +34,26 @@
 
 - **视觉**：画面上有什么（几个区域、什么形状、配色、数值/标签位置），描述到用户能据此在脑子里画出草图的程度
 - **数据变化时**：字段增减 / 数值极端 / 空数据 / 只一行数据时分别长什么样（字段增减即 AI 生成的 `encoding` 绑定变化，组件需自行适应）
-- **交互**：是否点选（`dispatch select` → 触发联动 → `cancelSelect` 取消）；不支持用户改样式，配色/阈值等行为要么写死要么不做，逐条写明
+- **交互**：是否点选（`dispatch select` → 触发联动 → `cancelSelect` 取消）；是否支持下钻——写明哪些槽位可作为下钻来源、图上点哪里算落在该槽位（点击映射），**默认不启用**；下钻的业务路径（钻到哪一层）由报表配置，**不写进 meta 也不写进组件**；不支持用户改样式，配色/阈值等行为要么写死要么不做，逐条写明
 - **本期不做**：明确排除的范围（如「不做图例点击隐藏系列」），避免预期偏差
 
 ## 3. 数据契约（先人话，后 JSON）
 
 ### 3.1 AI 将如何绑定字段
 
-用户不手工拖拽字段；AI 根据 `dataSchema` 生成 DSL 的 `encoding`。计划需写明 N 个字段区域：
+用户不手工拖拽字段；AI 根据 `schema.properties.encoding` 生成报表配置的 `encoding`。计划需写明 N 个数据槽位：
 
-- **「<区域名>」**：接收什么类型的字段（维度/度量），最少/最多几个，必填还是可选；它在图上决定什么（如「决定环的圈数」）；`description` 写什么（AI 召回依据，需一句话说清用途）；未绑定/数据为空时组件显示什么
+- **「<槽位名>」**：接收什么类型的字段（`qbi:fieldType`: dimension / measure / both），单选（string）还是多选（array + maxItems），必填还是可选；它在图上决定什么（如「决定环的圈数」）；`description` 写什么（AI 召回依据，需一句话说清用途）；未绑定/数据为空时组件显示什么
 - …
   一次最多取 N 行数据，超出时的表现是 …
 
-> 当前 AI Meta 仅 `dataSchema.areas`，没有样式/配置面板概念；不要在计划里设计「配置项」。
+要做下钻时额外写一段**可下钻槽位与点击映射**：根级 `meta.interaction.drill.channels` 列出哪几个槽位 key（默认全部不开）、图上点哪个位置算落在该槽位。纯度量槽位与过滤槽位不能开（开了也会被宿主忽略）。要钻到哪个下级字段是**报表侧的配置**，不属于组件契约，计划里不要把具体业务层级当成组件能力写。
+
+> 当前 AI Meta 为 `{ schema, uiSchema }`：样式选项经 `schema.properties.options`（下划线键叶子）与 `uiSchema.options`（白名单控件）声明；计划可写样式选项，但不得设计宿主不支持的路径或动作。
 
 ### 3.2 对应的 meta.ts
 
-```ts
-import type { Interfaces } from '@quickbi/bi-open-react-sdk';
-import { defineMeta } from '@quickbi/bi-open-react-sdk';
-
-export default defineMeta<Interfaces.AIComponentMeta>({
-  dataSchema: {
-    areas: [
-      {
-        id: 'area_row',
-        name: '维度',
-        description: '分类轴，绑定维度字段',
-        queryAxis: 'row',
-        rule: { required: true, maxColNum: 1, fieldTypes: ['dimension'] },
-      },
-      {
-        id: 'area_column',
-        name: '度量',
-        description: '数值轴，绑定度量字段',
-        queryAxis: 'column',
-        rule: { required: true, maxColNum: 3, fieldTypes: ['measure'] },
-      },
-    ],
-  },
-});
-```
-
-> Vanilla 项目将以上两个 import 改为 `@quickbi/bi-open-sdk`。按实际需求调整字段区，但保留每个字段区唯一的 `id`。
-
-> 每个字段区的 `id` 同时是组件里 `encoding[id]` 的取值键，确认后再改名需同步改代码和 mock 数据。
+写出本项目的 `meta.ts` 全文：导出写法与槽位声明规则按 `meta-and-coding.md`「meta.ts 数据契约」节；Vanilla 项目将 import 改为 `@quickbi/bi-open-sdk`。槽位 key 与 3.1 确认的槽位一一对应，它同时是组件里 `encoding[<槽位 key>]` 的取值键，确认后再改名需同步改代码和 mock 数据。
 
 ## 4. 实现方案
 
@@ -91,7 +66,7 @@ export default defineMeta<Interfaces.AIComponentMeta>({
 
 - [ ] 脚手架生成（模板：…）
 - [ ] 写 meta.ts + 组件实现
-- [ ] 构造调试 DSL + 本地预览，确认组件正常加载且无报错
+- [ ] 构造调试 spec + 本地预览，确认组件正常加载且无报错
 - [ ] 构建打包
 - [ ] 上传发布 + 回读校验
 
@@ -100,7 +75,7 @@ export default defineMeta<Interfaces.AIComponentMeta>({
 
 ## 三、写计划的硬要求
 
-- 第 2、3 段是给用户看的，**全部用自然语言**；不要用 `maxColNum` / `fieldTypes` / `queryAxis` 这类字段名当描述，换成「最多绑 6 个字段」「只接受数值字段」。
+- 第 2、3 段是给用户看的，**全部用自然语言**；不要用数据契约的机器字段名（`qbi:fieldType`、`maxItems`、槽位 key 等）当描述，换成「最多绑 6 个字段」「只接受数值字段」。
 - JSON 只在 3.2 出现一次，作为自然语言描述的附录，不要先 JSON 后解释。
 - 不写不确定的东西。拿不准就写进「假设」或当面问，不要用模糊措辞掩盖。
 - 计划里不写「是否需要我继续？」之类的反问，确认话术统一放在下面的确认闸门。
@@ -112,7 +87,7 @@ export default defineMeta<Interfaces.AIComponentMeta>({
 > 以上计划确认后我再开始写代码。你可以直接回复：
 >
 > - **「确认」** → 我按计划执行
-> - **「改 X」** → 指出要调整的部分（如「字段区改成 2 个」「不要用 echarts」），我改完计划再确认
+> - **「改 X」** → 指出要调整的部分（如「槽位改成 2 个」「不要用 echarts」），我改完计划再确认
 > - **「只做到本地预览」** → 我不做上传发布
 
 用户确认后，把计划第 5 段的步骤转成 todo 清单跟进，每完成一个 Phase 同步勾掉 `PLAN.md` 里的对应项。
