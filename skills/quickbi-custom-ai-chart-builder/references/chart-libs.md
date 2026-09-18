@@ -11,7 +11,7 @@
 | B | ECharts | 大多数标准图表 |
 | C | d3 / Vega 等 | A、B 无法满足的定制图形 |
 
-ECharts、d3、Vega 都是第三方依赖：保留在 `package.json` 的 dependencies，配置 `externals`，并在本地 usable mock 和平台上传参数中声明对应 `external_assets`。宿主内置的 React、ReactDOM、lodash、moment 与必须打入产物的 Quick BI SDK 不属于这一类。
+ECharts、d3、Vega 都是第三方依赖：保留在 `package.json` 的 dependencies，配置 `externals`，并在本地 usable mock 和平台上传参数中声明对应 `external_assets`（写法与 url 规则见 `externals.md`）。宿主内置的 React、ReactDOM、lodash、moment 与必须打入产物的 Quick BI SDK 不属于这一类。
 
 ## ECharts 坐标系
 
@@ -26,39 +26,11 @@ ECharts、d3、Vega 都是第三方依赖：保留在 `package.json` 的 depende
 
 ## 当前 AI Meta 基线
 
-所有配方都以 `AIComponentMeta` 和 `defineMeta` 为起点（契约要求与导出写法见 `meta-and-coding.md`）。按组件需要增删区域，但保持 area `id` 与组件的 `encoding` 读取一致：
-
-```ts
-import type { Interfaces } from '@quickbi/bi-open-react-sdk';
-import { defineMeta } from '@quickbi/bi-open-react-sdk';
-
-export default defineMeta<Interfaces.AIComponentMeta>({
-  dataSchema: {
-    areas: [
-      {
-        id: 'area_row',
-        name: '维度',
-        description: '分类轴，绑定维度字段',
-        queryAxis: 'row',
-        rule: { required: true, maxColNum: 1, fieldTypes: ['dimension'] },
-      },
-      {
-        id: 'area_column',
-        name: '度量',
-        description: '数值轴，绑定度量字段',
-        queryAxis: 'column',
-        rule: { required: true, maxColNum: 3, fieldTypes: ['measure'] },
-      },
-    ],
-  },
-});
-```
-
-Vanilla 项目仅将两个 SDK import 改为 `@quickbi/bi-open-sdk`。
+所有配方都以 `AIComponentMeta` 和 `defineMeta` 为起点；基线示例与导出写法见 `meta-and-coding.md`「meta.ts 数据契约」节。
 
 ## React ECharts 骨架
 
-React 组件直接接收 `AIComponentProps`；没有 `status` 字段。初始化和 resize 在一个 effect 中，数据变化只更新 option：
+React 组件直接接收 `AIComponentProps`；初始化和 resize 在一个 effect 中，数据变化只更新 option：
 
 ```tsx
 import React from 'react';
@@ -69,15 +41,16 @@ import type { Interfaces } from '@quickbi/bi-open-react-sdk';
 const Chart: React.FC<Interfaces.AIComponentProps> = ({ data, encoding, dispatch }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const chartRef = React.useRef<ECharts | null>(null);
-  const categoryField = encoding.area_row?.[0];
-  const valueFields = encoding.area_column ?? [];
+  const categoryField = encoding.category?.[0];
+  const valueFields = encoding.value ?? [];
 
   React.useEffect(() => {
     if (!containerRef.current) return;
     const chart = init(containerRef.current);
     chartRef.current = chart;
     chart.on('click', event => {
-      dispatch?.({ type: 'select', payload: { dataIndex: event.dataIndex } });
+      /* channel 是槽位 key，不是 event.seriesIndex 之类图表库位置量 */
+      dispatch?.({ type: 'select', payload: { dataIndex: event.dataIndex, channel: 'category' } });
     });
     const observer = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
@@ -114,8 +87,6 @@ const Chart: React.FC<Interfaces.AIComponentProps> = ({ data, encoding, dispatch
 };
 ```
 
-图表容器必须始终存在；空态通过 `chart.clear()` 或覆盖层处理，不能条件渲染替换容器。
-
 ## Vanilla 图表实现
 
 Vanilla 在 `mount` 与 `update` 中读取 `props.customProps` 并刷新图表，在 `umount` 中清理资源：
@@ -137,26 +108,33 @@ umount() {
 
 render(props: Interfaces.LifecycleProps<Interfaces.AIComponentProps>) {
   const { data, encoding } = props.customProps!;
-  // 根据 data.values 与 encoding.area_row / encoding.area_column 调用 setOption
+  // 根据 data.values 与 encoding.category / encoding.value 调用 setOption
 }
 ```
 
 ## KPI 指标卡
 
-单度量卡片可仅保留一个度量区域：
+单度量卡片可仅保留一个度量槽位：
 
 ```ts
 export default defineMeta<Interfaces.AIComponentMeta>({
-  dataSchema: {
-    areas: [
-      {
-        id: 'area_column',
-        name: '指标值',
-        description: '指标数值，绑定度量字段',
-        queryAxis: 'column',
-        rule: { required: true, maxColNum: 1, fieldTypes: ['measure'] },
+  schema: {
+    type: 'object',
+    properties: {
+      encoding: {
+        type: 'object',
+        title: '数据',
+        properties: {
+          value: {
+            type: 'string',
+            title: '指标值',
+            description: '指标数值，绑定 1 个度量字段',
+            'qbi:fieldType': 'measure',
+          },
+        },
+        required: ['value'],
       },
-    ],
+    },
   },
 });
 ```
@@ -168,7 +146,7 @@ import React from 'react';
 import type { Interfaces } from '@quickbi/bi-open-react-sdk';
 
 const KpiCard: React.FC<Interfaces.AIComponentProps> = ({ data, encoding, dispatch }) => {
-  const field = encoding.area_column?.[0];
+  const field = encoding.value?.[0];
   const row = data?.values?.[0];
   const value = field && row ? Number(row[field]) || 0 : 0;
 
@@ -179,19 +157,3 @@ const KpiCard: React.FC<Interfaces.AIComponentProps> = ({ data, encoding, dispat
   );
 };
 ```
-
-## externals 配置
-
-字符串 external 会原样传给 Rspack；默认配置将它作为运行时全局变量使用。右侧必须是 CDN 或宿主实际提供的浏览器全局名。保留模板已有映射并追加 ECharts：
-
-```ts
-externals: {
-  lodash: '_',
-  react: 'React',
-  'react-dom': 'ReactDOM',
-  moment: 'moment',
-  echarts: 'echarts',
-},
-```
-
-若需要 CommonJS、AMD 和浏览器全局分别映射，显式使用 Rspack 支持的 UMD external 对象；不要假定 `defineConfig` 会自动展开字符串简写。ECharts 的精确版本和 CDN URL 必须保持一致。
