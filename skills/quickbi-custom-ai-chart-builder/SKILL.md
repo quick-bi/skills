@@ -187,7 +187,7 @@ devServer 透出以下内容供渲染侧读取：
 
 ### 4.3 构造调试 spec
 
-1. 用 `quickbi-mcp:recall_assets` 召回数据集，拿到 `origin_asset_id`（即 cubeId）和字段列表
+1. 用 `quickbi-mcp:recall_assets` 召回候选数据集，只取 `asset_type` 为 `dataset` 的数据集，其 `origin_asset_id`（即 cubeId）用作 `data_sources[].id`；再用 `quickbi-mcp:get_cube_meta` 按 cubeId 取权威字段清单（`name` / `role` / `granularity`），字段实名与层级粒度以此为准
 2. 根据 `src/meta.ts` 的 `schema.properties.encoding` 选择合适的维度/度量字段
 3. 构造 DashboardSpec（注意 ID 前缀公约、dimensions/measures 必须是对象数组）：
 
