@@ -25,13 +25,14 @@ npx skills add https://github.com/quick-bi/skills.git --skill <skill-name>
 npx skills add https://gitee.com/quick-bi/skills.git --skill <skill-name>
 ```
 
-Each release also carries a prebuilt zip — download it from [GitHub Releases](https://github.com/quick-bi/skills/releases) or [Gitee releases](https://gitee.com/quick-bi/skills/releases) and unzip it into your agent's skills directory.
+For a zip install, use the GitHub or Gitee repository download URL in [`release/README.md`](./release/README.md) and unzip the package into your agent's skills directory. Pushing a matching skill version tag triggers the GitHub Actions **Release** workflow, which commits the package for repository mirroring.
 
 ## Repository structure
 
 ```text
 ./skills     Skill examples
 ./scripts    Build tooling
+./release    Latest installable zip for each skill and installation guide
 ```
 
 ## Skills

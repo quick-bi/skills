@@ -9,76 +9,69 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  package:
     runs-on: ubuntu-latest
+    concurrency:
+      group: skill-packages-release
+      cancel-in-progress: false
     steps:
-      - name: Checkout
+      - name: Check out release tag
         uses: actions/checkout@v4
 
-      - name: Parse and validate tag
-        id: tag
+      - name: Build and validate tagged skill
+        id: package
         env:
           TAG: ${{ github.ref_name }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "$TAG" != *@* ]]; then
-            echo "::error::tag '$TAG' must look like <skill-name>@<version>"
-            exit 1
-          fi
+          [[ "$TAG" == *@* ]] || { echo "Tag must look like <skill-name>@<version>" >&2; exit 1; }
           skill="${TAG%@*}"
           version="${TAG##*@}"
-          if [[ ! -d "skills/$skill" ]]; then
-            echo "::error::no skill folder skills/$skill for tag '$TAG'"
-            exit 1
-          fi
-          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
-            echo "::error::version '$version' is not semantic"
-            exit 1
-          fi
-          {
-            echo "skill=$skill"
-            echo "version=$version"
-          } >> "$GITHUB_OUTPUT"
+          [[ "$skill" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || { echo "Invalid skill name: $skill" >&2; exit 1; }
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]] || { echo "Invalid version: $version" >&2; exit 1; }
+          [[ -f "skills/$skill/SKILL.md" ]] || { echo "Skill not found: $skill" >&2; exit 1; }
 
-      - name: Build skill zip
-        env:
-          SKILL: ${{ steps.tag.outputs.skill }}
-          TAG: ${{ github.ref_name }}
-        shell: bash
-        run: scripts/build.sh "$SKILL" --tag "$TAG"
+          build_dir="$(mktemp -d "$RUNNER_TEMP/skill-package.XXXXXX")"
+          scripts/build.sh "$skill" --tag "$TAG" --out "$build_dir"
+          shopt -s nullglob
+          archives=("$build_dir"/*.zip)
+          [[ ${#archives[@]} -eq 1 ]] || { echo "Expected exactly one zip" >&2; exit 1; }
+          unzip -tq "${archives[0]}"
+          echo "skill=$skill" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "path=${archives[0]}" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      - name: Extract release notes from CHANGELOG.md
-        id: notes
+      - name: Check out main for the mirrored package
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Commit package to main
         env:
-          SKILL: ${{ steps.tag.outputs.skill }}
-          VERSION: ${{ steps.tag.outputs.version }}
+          PACKAGE_PATH: ${{ steps.package.outputs.path }}
+          SKILL: ${{ steps.package.outputs.skill }}
+          VERSION: ${{ steps.package.outputs.version }}
+          TAG_COMMIT: ${{ steps.package.outputs.commit }}
         shell: bash
         run: |
           set -euo pipefail
-          changelog="skills/$SKILL/CHANGELOG.md"
-          notes=""
-          if [ -f "$changelog" ]; then
-            notes="$(awk -v v="$VERSION" '
-              $0 ~ "^## \\[" v "\\]" { flag = 1; next }
-              flag && /^## \[/ { exit }
-              flag { print }
-            ' "$changelog")"
-          fi
-          if [ -z "$notes" ]; then
-            notes="Release of $SKILL $VERSION."
-          fi
-          {
-            echo 'notes<<RELEASE_NOTES_EOF'
-            printf '%s\n' "$notes"
-            echo 'RELEASE_NOTES_EOF'
-          } >> "$GITHUB_OUTPUT"
+          git merge-base --is-ancestor "$TAG_COMMIT" HEAD || { echo "Release tag must point to a commit on main" >&2; exit 1; }
+          main_version="$(awk 'NR == 1 && /^---[[:space:]]*$/ { fm = 1; next } fm && /^---[[:space:]]*$/ { exit } fm && /^version:[[:space:]]*/ { sub(/^version:[[:space:]]*/, ""); print; exit }' "skills/$SKILL/SKILL.md")"
+          [[ "$main_version" == "$VERSION" ]] || { echo "main has $SKILL version $main_version, but tag requests $VERSION" >&2; exit 1; }
 
-      - name: Create release and attach zip
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ steps.tag.outputs.skill }} ${{ steps.tag.outputs.version }}
-          body: ${{ steps.notes.outputs.notes }}
-          files: dist/*.zip
-          fail_on_unmatched_files: true
+          target="release/$SKILL.zip"
+          if [[ -f "$target" ]]; then
+            previous_version="$(unzip -p "$target" "$SKILL/SKILL.md" | awk '/^version:[[:space:]]*/ { sub(/^version:[[:space:]]*/, ""); print; exit }')"
+            [[ -n "$previous_version" ]] || { echo "Cannot read version from $target" >&2; exit 1; }
+            [[ "$previous_version" != "$VERSION" ]] || { echo "Version $VERSION is already packaged" >&2; exit 1; }
+          fi
+          mkdir -p release
+          cp "$PACKAGE_PATH" "$target"
+          git add -- "$target"
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m "build: package $SKILL@$VERSION"
+          git push origin HEAD:refs/heads/main

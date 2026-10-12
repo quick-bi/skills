@@ -25,13 +25,14 @@ npx skills add https://github.com/quick-bi/skills.git --skill <skill-name>
 npx skills add https://gitee.com/quick-bi/skills.git --skill <skill-name>
 ```
 
-每个 Release 还附带预构建的 zip——从 [GitHub Releases](https://github.com/quick-bi/skills/releases) 或 [Gitee 发行版](https://gitee.com/quick-bi/skills/releases) 下载，解压到智能体的技能目录即可使用。
+如需通过 zip 安装，请使用 [`release/README.md`](./release/README.md) 中的 GitHub 或 Gitee 仓库下载地址，将压缩包解压到智能体的技能目录。推送与技能版本匹配的 tag 后，GitHub Actions 的 **Release** 工作流会提交安装包，供仓库同步到 Gitee。
 
 ## 仓库结构
 
 ```text
 ./skills     技能示例
 ./scripts    构建工具
+./release    每个技能的最新版安装包及安装说明
 ```
 
 ## 技能列表

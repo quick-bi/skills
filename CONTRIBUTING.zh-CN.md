@@ -57,9 +57,20 @@ version: 1.0.0
 - `config.yaml`（用户级 `~/.qbi/config.yaml` 或工作目录级 `<workspace>/.qbi/config.yaml`）**仅放鉴权凭证**：`server_domain` / `api_key` / `api_secret`。它是多个 Quick BI skill 共用的凭证文件，不得写入凭证以外的键。
 - `settings.yaml`（Skill 根目录，随包分发）放 **skill 自身设置**（如展示类型、票据参数等非凭证项）；脚本对缺失文件或缺键回退内置默认值。
 
-## 发版
+## 打包
 
-以 `<skill-name>@<version>` 打 tag（如 `quickbi-data-analyst@1.1.0`）。推送 tag 会触发 GitHub 与 Gitee 上的 CI：把对应技能打包为 `<skill-name>-<version>.zip` 并挂到两端 Release。zip 内即技能文件夹本身，解压到智能体的技能目录即可完成安装。
+技能准备发包时，先更新 `SKILL.md` 中的版本号并合并到 `main`，再创建并推送对应的 `<skill-name>@<version>` tag（如 `quickbi-data-analyst@0.7.1`）。**Release** 工作流会从 tag 构建技能，并将 `release/<skill-name>.zip` 提交到 `main`。tag 指向的提交必须在 `main` 上，且 `main` 中该技能的版本号仍须与 tag 一致；同一版本重复打包会被拒绝。
+
+```bash
+git switch main
+git pull
+git tag quickbi-data-analyst@0.7.1
+git push origin quickbi-data-analyst@0.7.1
+```
+
+`release/README.md` 中有 GitHub 和 Gitee 仓库的固定下载链接。每个 tag 只更新对应技能的 zip；Gitee 仓库同步后，其下载地址也会更新。旧包仍保留在 Git 历史中，因此仓库体积会在每次发包后有所增长。
+
+zip 内即技能文件夹本身，解压到智能体的技能目录即可完成安装。普通提交不会触发工作流；不符合 `<skill-name>@<version>` 格式的 tag 不会产出安装包。
 
 本地构建：
 
@@ -67,3 +78,5 @@ version: 1.0.0
 scripts/build.sh <skill-name>   # 单个技能
 scripts/build.sh all            # 全部技能
 ```
+
+本地构建仍可用来检查改动；`dist/` 保持被 Git 忽略，工作流不读取本地产物。

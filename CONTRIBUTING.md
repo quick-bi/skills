@@ -57,9 +57,20 @@ The two configuration files serve distinct purposes and must not be mixed:
 - `config.yaml` (user-level `~/.qbi/config.yaml` or workspace-level `<workspace>/.qbi/config.yaml`) holds **credentials only**: `server_domain` / `api_key` / `api_secret`. It is a credential file shared across Quick BI skills — never add non-credential keys.
 - `settings.yaml` (skill root, shipped with the package) holds **skill-specific settings** (display options, ticket parameters, and other non-credential items); scripts fall back to built-in defaults when the file or a key is missing.
 
-## Releases
+## Packaging
 
-Tag releases as `<skill-name>@<version>` (e.g. `quickbi-data-analyst@1.1.0`). Pushing the tag triggers CI on GitHub and Gitee: the tagged skill is packaged into `<skill-name>-<version>.zip` and attached to the release on both platforms. The zip contains the skill folder itself, so unzipping into an agent's skills directory installs it.
+When a skill is ready to ship, bump its `SKILL.md` version and merge that change into `main`. Create and push a matching `<skill-name>@<version>` tag (for example, `quickbi-data-analyst@0.7.1`). The **Release** workflow builds the skill from the tag and commits `release/<skill-name>.zip` to `main`. The tagged commit must be on `main`, and the skill version on `main` must still match the tag. The workflow rejects packaging the same version twice.
+
+```bash
+git switch main
+git pull
+git tag quickbi-data-analyst@0.7.1
+git push origin quickbi-data-analyst@0.7.1
+```
+
+The fixed GitHub and Gitee repository download URLs are documented in `release/README.md`. Each tag updates only the selected skill's zip. The Gitee URL updates after the repository mirror synchronizes. Older packages remain in Git history, so repository size grows once per package update.
+
+The zip contains the skill folder itself, so unzipping into an agent's skills directory installs it. Ordinary commits do not trigger the workflow; tags outside the `<skill-name>@<version>` pattern do not produce packages.
 
 Build zips locally with:
 
@@ -67,3 +78,5 @@ Build zips locally with:
 scripts/build.sh <skill-name>   # one skill
 scripts/build.sh all            # every skill
 ```
+
+Local builds remain available for checking changes; `dist/` stays ignored and is not used by the workflow.
