@@ -70,9 +70,10 @@ SYSTEM_PROMPT_DASHBOARD = """4. 本轮需生成仪表板：必须使用 qbi-dash
 
 
 def build_prompt_prefix(dashboard=False):
-    """拼接系统提示词（含模式规则），并为用户问题预留固定标题。"""
+    """将全部自动前缀包裹为前端可隐藏的协议块，闭合标签后用一个换行分隔用户原文。"""
     mode = SYSTEM_PROMPT_DASHBOARD if dashboard else SYSTEM_PROMPT_ANALYSIS
-    return (SYSTEM_PROMPT_BASE + mode).strip() + "\n【用户问题】\n"
+    return ("<qbi-skill-internal>\n" + (SYSTEM_PROMPT_BASE + mode).strip()
+            + "\n</qbi-skill-internal>\n")
 
 
 # 产物标签处理：artifact-dashboard（仪表板）为合法产物（提取信息 + 换票拼链）；
