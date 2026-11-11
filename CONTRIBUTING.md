@@ -59,7 +59,7 @@ The two configuration files serve distinct purposes and must not be mixed:
 
 ## Packaging
 
-When a skill is ready to ship, bump its `SKILL.md` version and merge that change into `main`. Create and push a matching `<skill-name>@<version>` tag (for example, `quickbi-data-analyst@0.7.1`). The **Release** workflow builds the skill from the tag and commits `release/<skill-name>.zip` to `main`. The tagged commit must be on `main`, and the skill version on `main` must still match the tag. The workflow rejects packaging the same version twice.
+When a skill is ready to ship, bump its `SKILL.md` version and merge that change into `main`. Create and push a matching `<skill-name>@<version>` tag (for example, `quickbi-data-analyst@0.7.1`). The **Release** workflow builds the skill from the tag and uploads the ZIP directly to OSS. The tagged commit must be on `main`, and the skill version on `main` must still match the tag.
 
 ```bash
 git switch main
@@ -68,15 +68,19 @@ git tag quickbi-data-analyst@0.7.1
 git push origin quickbi-data-analyst@0.7.1
 ```
 
-The fixed GitHub and Gitee repository download URLs are documented in `release/README.md`. Each tag updates only the selected skill's zip. The Gitee URL updates after the repository mirror synchronizes. Older packages remain in Git history, so repository size grows once per package update.
+Each successful release updates the selected skill at `oss://quickbi-skills/<skill-name>.zip`. The [installation guide](./README.md#install) lists the public download URLs.
 
-The zip contains the skill folder itself, so unzipping into an agent's skills directory installs it. Ordinary commits do not trigger the workflow; tags outside the `<skill-name>@<version>` pattern do not produce packages.
+### OSS settings and retries
 
-Build zips locally with:
+Under **Settings → Secrets and variables → Actions**, set the `OSS_ACCESS_KEY_ID` and `OSS_ACCESS_KEY_SECRET` repository secrets. The region defaults to `cn-beijing`. Set the `OSS_REGION` repository variable to override it.
+
+If an upload fails, rerun the failed job. To republish an existing release, open **Actions → Release → Run workflow** and enter its `<skill-name>@<version>` tag. The tag must still match the skill version on `main`.
+
+### Local builds
 
 ```bash
 scripts/build.sh <skill-name>   # one skill
 scripts/build.sh all            # every skill
 ```
 
-Local builds remain available for checking changes; `dist/` stays ignored and is not used by the workflow.
+Local packages are written to the Git-ignored `dist/` directory by default.

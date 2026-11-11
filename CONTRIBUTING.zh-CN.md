@@ -59,7 +59,7 @@ version: 1.0.0
 
 ## 打包
 
-技能准备发包时，先更新 `SKILL.md` 中的版本号并合并到 `main`，再创建并推送对应的 `<skill-name>@<version>` tag（如 `quickbi-data-analyst@0.7.1`）。**Release** 工作流会从 tag 构建技能，并将 `release/<skill-name>.zip` 提交到 `main`。tag 指向的提交必须在 `main` 上，且 `main` 中该技能的版本号仍须与 tag 一致；同一版本重复打包会被拒绝。
+技能准备发包时，先更新 `SKILL.md` 中的版本号并合并到 `main`，再创建并推送对应的 `<skill-name>@<version>` tag（如 `quickbi-data-analyst@0.7.1`）。**Release** 工作流会从 tag 构建技能，并将 ZIP 直接上传到 OSS。tag 指向的提交必须在 `main` 上，且 `main` 中该技能的版本号仍须与 tag 一致。
 
 ```bash
 git switch main
@@ -68,15 +68,19 @@ git tag quickbi-data-analyst@0.7.1
 git push origin quickbi-data-analyst@0.7.1
 ```
 
-`release/README.md` 中有 GitHub 和 Gitee 仓库的固定下载链接。每个 tag 只更新对应技能的 zip；Gitee 仓库同步后，其下载地址也会更新。旧包仍保留在 Git 历史中，因此仓库体积会在每次发包后有所增长。
+发布成功后会更新 `oss://quickbi-skills/<skill-name>.zip`。公开下载链接见[安装说明](./README.zh-CN.md#安装)。
 
-zip 内即技能文件夹本身，解压到智能体的技能目录即可完成安装。普通提交不会触发工作流；不符合 `<skill-name>@<version>` 格式的 tag 不会产出安装包。
+### OSS 配置与重试
 
-本地构建：
+在仓库的 **Settings → Secrets and variables → Actions** 下配置 `OSS_ACCESS_KEY_ID` 和 `OSS_ACCESS_KEY_SECRET` 两个仓库 Secret。地域默认是 `cn-beijing`，可通过 `OSS_REGION` 仓库变量覆盖。
+
+上传失败时可重跑失败的任务。如需重新发布已有版本，在 **Actions → Release → Run workflow** 中填入对应的 `<skill-name>@<version>` tag。该 tag 仍须与 `main` 上的技能版本一致。
+
+### 本地构建
 
 ```bash
 scripts/build.sh <skill-name>   # 单个技能
 scripts/build.sh all            # 全部技能
 ```
 
-本地构建仍可用来检查改动；`dist/` 保持被 Git 忽略，工作流不读取本地产物。
+本地构建默认输出到 Git 忽略的 `dist/` 目录。

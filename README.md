@@ -6,33 +6,50 @@ Agent Skills for Quick BI. Each skill is a self-contained folder of instructions
 
 ## Install
 
-GitHub:
+Download the latest published ZIP from Alibaba Cloud OSS and extract the skill folder into your agent's skills directory. Each package contains a versioned `SKILL.md`, and its download URL stays the same across releases.
+
+- [quickbi-data-analyst.zip](https://quickbi-skills.oss-cn-beijing.aliyuncs.com/quickbi-data-analyst.zip)
+- [quickbi-custom-ai-chart-builder.zip](https://quickbi-skills.oss-cn-beijing.aliyuncs.com/quickbi-custom-ai-chart-builder.zip)
+
+To install globally in Codex, run the command for the skill you want.
+
+```bash
+npx skills add https://quickbi-skills.oss-cn-beijing.aliyuncs.com/quickbi-data-analyst.zip -g -a codex -y
+npx skills add https://quickbi-skills.oss-cn-beijing.aliyuncs.com/quickbi-custom-ai-chart-builder.zip -g -a codex -y
+```
+
+You can also paste this prompt into your agent.
+
+```text
+Download https://quickbi-skills.oss-cn-beijing.aliyuncs.com/quickbi-data-analyst.zip and install the quickbi-data-analyst folder in your skills directory. Report the installed version from SKILL.md.
+```
+
+### Install from source
+
+**GitHub**
 
 ```bash
 npx skills add https://github.com/quick-bi/skills.git
 ```
 
-Gitee:
+**Gitee**
 
 ```bash
 npx skills add https://gitee.com/quick-bi/skills.git
 ```
 
-To install a specific skill, append `--skill <skill-name>`:
+To install a specific skill, append `--skill <skill-name>`.
 
 ```bash
 npx skills add https://github.com/quick-bi/skills.git --skill <skill-name>
 npx skills add https://gitee.com/quick-bi/skills.git --skill <skill-name>
 ```
 
-For a zip install, use the GitHub or Gitee repository download URL in [`release/README.md`](./release/README.md) and unzip the package into your agent's skills directory. Pushing a matching skill version tag triggers the GitHub Actions **Release** workflow, which commits the package for repository mirroring.
-
 ## Repository structure
 
 ```text
 ./skills     Skill examples
 ./scripts    Build tooling
-./release    Latest installable zip for each skill and installation guide
 ```
 
 ## Skills
@@ -44,7 +61,7 @@ For a zip install, use the GitHub or Gitee repository download URL in [`release/
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for versioning and changelog conventions.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for versioning, changelogs, and publishing to OSS.
 
 ## License
 

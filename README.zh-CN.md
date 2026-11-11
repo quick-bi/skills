@@ -6,33 +6,50 @@ Quick BI 的 Agent Skills 集合。每个技能是一个自包含文件夹，内
 
 ## 安装
 
-GitHub：
+从阿里云 OSS 下载最新发布的 ZIP，将解压后的技能目录放入智能体的技能目录。每个包的 `SKILL.md` 记录版本，下载地址在版本更新后继续使用。
+
+- [quickbi-data-analyst.zip](https://quickbi-skills.oss-cn-beijing.aliyuncs.com/quickbi-data-analyst.zip)
+- [quickbi-custom-ai-chart-builder.zip](https://quickbi-skills.oss-cn-beijing.aliyuncs.com/quickbi-custom-ai-chart-builder.zip)
+
+如需全局安装到 Codex，运行对应技能的命令。
+
+```bash
+npx skills add https://quickbi-skills.oss-cn-beijing.aliyuncs.com/quickbi-data-analyst.zip -g -a codex -y
+npx skills add https://quickbi-skills.oss-cn-beijing.aliyuncs.com/quickbi-custom-ai-chart-builder.zip -g -a codex -y
+```
+
+也可以将这段安装指令发给智能体。
+
+```text
+请从 https://quickbi-skills.oss-cn-beijing.aliyuncs.com/quickbi-data-analyst.zip 安装最新版 quickbi-data-analyst Skill。将压缩包中的 quickbi-data-analyst/ 文件夹放入你的 Skills 安装目录，完成后报告 SKILL.md 中的 version。
+```
+
+### 从源码安装
+
+**GitHub**
 
 ```bash
 npx skills add https://github.com/quick-bi/skills.git
 ```
 
-Gitee：
+**Gitee**
 
 ```bash
 npx skills add https://gitee.com/quick-bi/skills.git
 ```
 
-安装指定技能，追加 `--skill <skill-name>`：
+安装指定技能时，追加 `--skill <skill-name>`。
 
 ```bash
 npx skills add https://github.com/quick-bi/skills.git --skill <skill-name>
 npx skills add https://gitee.com/quick-bi/skills.git --skill <skill-name>
 ```
 
-如需通过 zip 安装，请使用 [`release/README.md`](./release/README.md) 中的 GitHub 或 Gitee 仓库下载地址，将压缩包解压到智能体的技能目录。推送与技能版本匹配的 tag 后，GitHub Actions 的 **Release** 工作流会提交安装包，供仓库同步到 Gitee。
-
 ## 仓库结构
 
 ```text
 ./skills     技能示例
 ./scripts    构建工具
-./release    每个技能的最新版安装包及安装说明
 ```
 
 ## 技能列表
@@ -44,7 +61,7 @@ npx skills add https://gitee.com/quick-bi/skills.git --skill <skill-name>
 
 ## 贡献
 
-版本与 changelog 约定见 [CONTRIBUTING.zh-CN.md](./CONTRIBUTING.zh-CN.md)。
+版本、changelog 和 OSS 发布说明见 [CONTRIBUTING.zh-CN.md](./CONTRIBUTING.zh-CN.md)。
 
 ## 许可证
 

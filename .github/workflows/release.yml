@@ -5,27 +5,33 @@ on:
     tags:
       - '*@*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag (<skill-name>@<version>)'
+        required: true
+        type: string
 
 concurrency:
   group: skill-packages-release
   cancel-in-progress: false
 
 jobs:
-  package:
-    if: github.event_name == 'push'
+  publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-    outputs:
-      skill: ${{ steps.package.outputs.skill }}
+      contents: read
     steps:
       - name: Check out release tag
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Build and validate tagged skill
         id: package
         env:
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.tag || github.ref_name }}
         shell: bash
         run: |
           set -euo pipefail
@@ -34,64 +40,17 @@ jobs:
           version="${TAG##*@}"
           [[ "$skill" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || { echo "Invalid skill name: $skill" >&2; exit 1; }
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]] || { echo "Invalid version: $version" >&2; exit 1; }
-          [[ -f "skills/$skill/SKILL.md" ]] || { echo "Skill not found: $skill" >&2; exit 1; }
+          git merge-base --is-ancestor HEAD refs/remotes/origin/main || { echo "Release tag must point to a commit on main" >&2; exit 1; }
+          main_skill="$(git show "refs/remotes/origin/main:skills/$skill/SKILL.md")"
+          main_version="$(awk 'NR == 1 && /^---[[:space:]]*$/ { fm = 1; next } fm && /^---[[:space:]]*$/ { exit } fm && /^version:[[:space:]]*/ { sub(/^version:[[:space:]]*/, ""); sub(/\r$/, ""); print; exit }' <<< "$main_skill")"
+          [[ "$main_version" == "$version" ]] || { echo "main has $skill version $main_version, but tag requests $version" >&2; exit 1; }
 
           build_dir="$(mktemp -d "$RUNNER_TEMP/skill-package.XXXXXX")"
           scripts/build.sh "$skill" --tag "$TAG" --out "$build_dir"
-          shopt -s nullglob
-          archives=("$build_dir"/*.zip)
-          [[ ${#archives[@]} -eq 1 ]] || { echo "Expected exactly one zip" >&2; exit 1; }
-          unzip -tq "${archives[0]}"
+          archive="$build_dir/$skill-$version.zip"
+          unzip -tq "$archive"
           echo "skill=$skill" >> "$GITHUB_OUTPUT"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "path=${archives[0]}" >> "$GITHUB_OUTPUT"
-          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
-      - name: Check out main for the mirrored package
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Commit package to main
-        env:
-          PACKAGE_PATH: ${{ steps.package.outputs.path }}
-          SKILL: ${{ steps.package.outputs.skill }}
-          VERSION: ${{ steps.package.outputs.version }}
-          TAG_COMMIT: ${{ steps.package.outputs.commit }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          git merge-base --is-ancestor "$TAG_COMMIT" HEAD || { echo "Release tag must point to a commit on main" >&2; exit 1; }
-          main_version="$(awk 'NR == 1 && /^---[[:space:]]*$/ { fm = 1; next } fm && /^---[[:space:]]*$/ { exit } fm && /^version:[[:space:]]*/ { sub(/^version:[[:space:]]*/, ""); print; exit }' "skills/$SKILL/SKILL.md")"
-          [[ "$main_version" == "$VERSION" ]] || { echo "main has $SKILL version $main_version, but tag requests $VERSION" >&2; exit 1; }
-
-          target="release/$SKILL.zip"
-          if [[ -f "$target" ]]; then
-            previous_version="$(unzip -p "$target" "$SKILL/SKILL.md" | awk '/^version:[[:space:]]*/ { sub(/^version:[[:space:]]*/, ""); print; exit }')"
-            [[ -n "$previous_version" ]] || { echo "Cannot read version from $target" >&2; exit 1; }
-            [[ "$previous_version" != "$VERSION" ]] || { echo "Version $VERSION is already packaged" >&2; exit 1; }
-          fi
-          mkdir -p release
-          cp "$PACKAGE_PATH" "$target"
-          git add -- "$target"
-          git -c user.name='github-actions[bot]' \
-              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-              commit -m "build: package $SKILL@$VERSION"
-          git push origin HEAD:refs/heads/main
-
-  sync-oss:
-    needs: package
-    if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.package.result == 'success') }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Check out the current release packages
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          persist-credentials: false
+          echo "path=$archive" >> "$GITHUB_OUTPUT"
 
       - name: Install ossutil
         shell: bash
@@ -107,9 +66,10 @@ jobs:
           chmod u+x "$ossutil_dir/ossutil"
           echo "$ossutil_dir" >> "$GITHUB_PATH"
 
-      - name: Upload release packages to OSS
+      - name: Upload release package to OSS
         env:
-          SKILL: ${{ needs.package.outputs.skill }}
+          PACKAGE_PATH: ${{ steps.package.outputs.path }}
+          SKILL: ${{ steps.package.outputs.skill }}
           OSS_REGION: ${{ vars.OSS_REGION || 'cn-beijing' }}
           OSS_ACCESS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}
           OSS_ACCESS_KEY_SECRET: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
@@ -120,13 +80,4 @@ jobs:
             echo "::error::Set the OSS_ACCESS_KEY_ID and OSS_ACCESS_KEY_SECRET Actions secrets."
             exit 1
           fi
-          if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
-            shopt -s nullglob
-            archives=(release/*.zip)
-          else
-            archives=("release/$SKILL.zip")
-          fi
-          [[ ${#archives[@]} -gt 0 ]] || { echo "::error::No release ZIPs found."; exit 1; }
-          for archive in "${archives[@]}"; do
-            ossutil cp "$archive" "oss://quickbi-skills/${archive##*/}" --force
-          done
+          ossutil cp "$PACKAGE_PATH" "oss://quickbi-skills/$SKILL.zip" --force
