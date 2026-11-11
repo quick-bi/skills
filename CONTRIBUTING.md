@@ -59,7 +59,7 @@ The two configuration files serve distinct purposes and must not be mixed:
 
 ## Packaging
 
-When a skill is ready to ship, bump its `SKILL.md` version and merge that change into `main`. Create and push a matching `<skill-name>@<version>` tag (for example, `quickbi-data-analyst@0.7.1`). The **Release** workflow builds the skill from the tag and uploads the ZIP directly to OSS. The tagged commit must be on `main`, and the skill version on `main` must still match the tag.
+When a skill is ready to ship, bump its `SKILL.md` version and merge that change into `main`. Create and push a matching `<skill-name>@<version>` tag (for example, `quickbi-data-analyst@0.7.1`). The **Release** workflow builds the skill from the tag, commits the ZIP to `release/<skill-name>.zip` on `main`, and uploads it to OSS. The tagged commit must be on `main`, and the skill version on `main` must still match the tag.
 
 ```bash
 git switch main
@@ -74,7 +74,7 @@ Each successful release updates the selected skill at `oss://quickbi-skills/<ski
 
 Under **Settings → Secrets and variables → Actions**, set the `OSS_ACCESS_KEY_ID` and `OSS_ACCESS_KEY_SECRET` repository secrets. The region defaults to `cn-beijing`. Set the `OSS_REGION` repository variable to override it.
 
-If an upload fails, rerun the failed job. To republish an existing release, open **Actions → Release → Run workflow** and enter its `<skill-name>@<version>` tag. The tag must still match the skill version on `main`.
+If an upload fails, rerun the failed job. To sync the current repository packages to OSS, run **Actions → Release → Run workflow**.
 
 ### Local builds
 

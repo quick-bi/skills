@@ -59,7 +59,7 @@ version: 1.0.0
 
 ## 打包
 
-技能准备发包时，先更新 `SKILL.md` 中的版本号并合并到 `main`，再创建并推送对应的 `<skill-name>@<version>` tag（如 `quickbi-data-analyst@0.7.1`）。**Release** 工作流会从 tag 构建技能，并将 ZIP 直接上传到 OSS。tag 指向的提交必须在 `main` 上，且 `main` 中该技能的版本号仍须与 tag 一致。
+技能准备发包时，先更新 `SKILL.md` 中的版本号并合并到 `main`，再创建并推送对应的 `<skill-name>@<version>` tag（如 `quickbi-data-analyst@0.7.1`）。**Release** 工作流从 tag 构建技能，将 ZIP 提交到 `main` 的 `release/<skill-name>.zip`，再上传到 OSS。tag 指向的提交必须在 `main` 上，且 `main` 中该技能的版本号仍须与 tag 一致。
 
 ```bash
 git switch main
@@ -74,7 +74,7 @@ git push origin quickbi-data-analyst@0.7.1
 
 在仓库的 **Settings → Secrets and variables → Actions** 下配置 `OSS_ACCESS_KEY_ID` 和 `OSS_ACCESS_KEY_SECRET` 两个仓库 Secret。地域默认是 `cn-beijing`，可通过 `OSS_REGION` 仓库变量覆盖。
 
-上传失败时可重跑失败的任务。如需重新发布已有版本，在 **Actions → Release → Run workflow** 中填入对应的 `<skill-name>@<version>` tag。该 tag 仍须与 `main` 上的技能版本一致。
+上传失败时可重跑失败的任务。如需把仓库内现有安装包同步到 OSS，可通过 **Actions → Release → Run workflow** 手动运行。
 
 ### 本地构建
 
