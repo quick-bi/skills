@@ -4,16 +4,20 @@ on:
   push:
     tags:
       - '*@*'
+  workflow_dispatch:
 
-permissions:
-  contents: write
+concurrency:
+  group: skill-packages-release
+  cancel-in-progress: false
 
 jobs:
   package:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    concurrency:
-      group: skill-packages-release
-      cancel-in-progress: false
+    permissions:
+      contents: write
+    outputs:
+      skill: ${{ steps.package.outputs.skill }}
     steps:
       - name: Check out release tag
         uses: actions/checkout@v4
@@ -75,3 +79,54 @@ jobs:
               -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
               commit -m "build: package $SKILL@$VERSION"
           git push origin HEAD:refs/heads/main
+
+  sync-oss:
+    needs: package
+    if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.package.result == 'success') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the current release packages
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Install ossutil
+        shell: bash
+        run: |
+          set -euo pipefail
+          ossutil_dir="$(mktemp -d "$RUNNER_TEMP/ossutil.XXXXXX")"
+          archive="$ossutil_dir/ossutil.zip"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$archive" \
+            https://gosspublic.alicdn.com/ossutil/v2/2.4.1/ossutil-2.4.1-linux-amd64.zip
+          printf '%s  %s\n' '57ee4c56796a40144acd6b0b96b53b4ba75e5cec09c01d8d0313c09a5524022f' "$archive" | sha256sum --check
+          unzip -q -j "$archive" ossutil-2.4.1-linux-amd64/ossutil -d "$ossutil_dir"
+          chmod u+x "$ossutil_dir/ossutil"
+          echo "$ossutil_dir" >> "$GITHUB_PATH"
+
+      - name: Upload release packages to OSS
+        env:
+          SKILL: ${{ needs.package.outputs.skill }}
+          OSS_REGION: ${{ vars.OSS_REGION || 'cn-beijing' }}
+          OSS_ACCESS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}
+          OSS_ACCESS_KEY_SECRET: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$OSS_ACCESS_KEY_ID" || -z "$OSS_ACCESS_KEY_SECRET" ]]; then
+            echo "::error::Set the OSS_ACCESS_KEY_ID and OSS_ACCESS_KEY_SECRET Actions secrets."
+            exit 1
+          fi
+          if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
+            shopt -s nullglob
+            archives=(release/*.zip)
+          else
+            archives=("release/$SKILL.zip")
+          fi
+          [[ ${#archives[@]} -gt 0 ]] || { echo "::error::No release ZIPs found."; exit 1; }
+          for archive in "${archives[@]}"; do
+            ossutil cp "$archive" "oss://quickbi-skills/${archive##*/}" --force
+          done

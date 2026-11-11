@@ -31,3 +31,7 @@ git push origin quickbi-data-analyst@0.7.1
 ```
 
 The workflow builds from the tag, verifies that the tagged commit is on `main` and that `main` has the same skill version, then commits an updated zip at the same path. Ordinary source commits do not trigger packaging. The Gitee URL updates after the repository mirror synchronizes. The zip reflects the last *packaged* version, which may differ from the current source. Older packages remain in Git history, so repository size grows once per package update.
+
+After the package lands on `main`, the workflow uploads it to `oss://quickbi-skills/<skill-name>.zip`. In the repository settings under **Secrets and variables → Actions**, add `OSS_ACCESS_KEY_ID` and `OSS_ACCESS_KEY_SECRET` as repository secrets. The region defaults to `cn-beijing` and can be set with the `OSS_REGION` repository variable. If the upload fails, rerun the failed job to sync the current package for that skill from `main`.
+
+Run **Release** manually from the **Actions** tab to sync all existing release ZIPs from `main` to OSS.
