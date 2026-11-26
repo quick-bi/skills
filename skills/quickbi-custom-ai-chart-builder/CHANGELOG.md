@@ -1,5 +1,11 @@
 # Changelog
 
+## [7.0.0-261023] - 2026-10-23
+
+[下载 OSS 归档](https://quickbi-skills.oss-cn-beijing.aliyuncs.com/quickbi-custom-ai-chart-builder.7.0.0-261023.zip)
+
+<!-- oss-release 7.0.0-261023 e45597314e16a0ca6a078943865ba972419005da -->
+
 ## [0.3.0] - 2026-09-17
 
 ### Changed

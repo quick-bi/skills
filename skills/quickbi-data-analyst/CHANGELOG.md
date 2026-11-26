@@ -1,5 +1,11 @@
 # Changelog
 
+## [7.0.2-261112] - 2026-11-12
+
+[下载 OSS 归档](https://quickbi-skills.oss-cn-beijing.aliyuncs.com/quickbi-data-analyst.7.0.2-261112.zip)
+
+<!-- oss-release 7.0.2-261112 2b98c727d776a247e1b469587353bcf29ab305f2 -->
+
 ## [0.7.2] - 2026-11-02
 
 ### Fixed

@@ -24,27 +24,6 @@ npx skills add https://quickbi-skills.oss-cn-beijing.aliyuncs.com/quickbi-custom
 请从 https://quickbi-skills.oss-cn-beijing.aliyuncs.com/quickbi-data-analyst.zip 安装最新版 quickbi-data-analyst Skill。将压缩包中的 quickbi-data-analyst/ 文件夹放入你的 Skills 安装目录，完成后报告 SKILL.md 中的 version。
 ```
 
-### 从源码安装
-
-**GitHub**
-
-```bash
-npx skills add https://github.com/quick-bi/skills.git
-```
-
-**Gitee**
-
-```bash
-npx skills add https://gitee.com/quick-bi/skills.git
-```
-
-安装指定技能时，追加 `--skill <skill-name>`。
-
-```bash
-npx skills add https://github.com/quick-bi/skills.git --skill <skill-name>
-npx skills add https://gitee.com/quick-bi/skills.git --skill <skill-name>
-```
-
 ## 仓库结构
 
 ```text

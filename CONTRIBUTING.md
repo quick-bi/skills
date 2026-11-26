@@ -6,17 +6,17 @@ Thanks for contributing to Quick BI Skills. Each skill lives in `skills/<skill-n
 
 ## Versioning
 
-Every `SKILL.md` declares a semantic version in its frontmatter:
+Set the version in the `SKILL.md` frontmatter using `X.Y.Z-YYMMDD`. Use that version for the release input, Git tag, and OSS archive name.
 
 ```yaml
 ---
 name: <skill-name>
 description: ...
-version: 1.0.0
+version: 7.0.2-261126
 ---
 ```
 
-Bump the version whenever the skill changes:
+Update the date suffix and the applicable version component when the skill changes.
 
 - **major** — breaking changes to the skill's workflow or outputs
 - **minor** — new steps, capabilities, or bundled resources
@@ -29,7 +29,7 @@ Each skill keeps its own `CHANGELOG.md` next to `SKILL.md`, newest first, follow
 ```markdown
 # Changelog
 
-## [1.1.0] - 2026-08-24
+## [1.1.0-260824] - 2026-08-24
 
 ### Added
 
@@ -39,7 +39,7 @@ Each skill keeps its own `CHANGELOG.md` next to `SKILL.md`, newest first, follow
 
 - Corrected field names in the OLAP example
 
-## [1.0.0] - 2026-08-10
+## [1.0.0-260810] - 2026-08-10
 
 - Initial release
 ```
@@ -59,22 +59,27 @@ The two configuration files serve distinct purposes and must not be mixed:
 
 ## Packaging
 
-When a skill is ready to ship, bump its `SKILL.md` version and merge that change into `main`. Create and push a matching `<skill-name>@<version>` tag (for example, `quickbi-data-analyst@0.7.1`). The **Release** workflow builds the skill from the tag, commits the ZIP to `release/<skill-name>.zip` on `main`, and uploads it to OSS. The tagged commit must be on `main`, and the skill version on `main` must still match the tag.
+Update the version in `SKILL.md` and merge the changes into `main`. In **Actions → Release → Run workflow**, select `main` and enter `skill` (the directory name) and `version` (from `SKILL.md`). You can also push a `<skill-name>@<version>` tag. The tagged commit must be on `main`, and its skill contents must match the current contents on `main`.
 
 ```bash
 git switch main
 git pull
-git tag quickbi-data-analyst@0.7.1
-git push origin quickbi-data-analyst@0.7.1
+git tag quickbi-data-analyst@7.0.2-261126
+git push origin quickbi-data-analyst@7.0.2-261126
 ```
 
-Each successful release updates the selected skill at `oss://quickbi-skills/<skill-name>.zip`. The [installation guide](./README.md#install) lists the public download URLs.
+The workflow commits the latest ZIP to `release/<skill-name>.zip` on `main` and records the OSS archive link in the skill's `CHANGELOG.md`. It then uploads the same ZIP to OSS in this order.
+
+- `oss://quickbi-skills/<skill-name>.<version>.zip` for downloading previous releases.
+- `oss://quickbi-skills/<skill-name>.zip` for the most recently published package.
+
+See the [installation guide](./README.md#install) for public download URLs.
 
 ### OSS settings and retries
 
 Under **Settings → Secrets and variables → Actions**, set the `OSS_ACCESS_KEY_ID` and `OSS_ACCESS_KEY_SECRET` repository secrets. The region defaults to `cn-beijing`. Set the `OSS_REGION` repository variable to override it.
 
-If an upload fails, rerun the failed job. To sync the current repository packages to OSS, run **Actions → Release → Run workflow**.
+If an upload fails, rerun the failed job. A retry uses the committed ZIP while its version is still current. Use a new version when publishing different skill contents.
 
 ### Local builds
 

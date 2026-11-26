@@ -5,6 +5,15 @@ on:
     tags:
       - '*@*'
   workflow_dispatch:
+    inputs:
+      skill:
+        description: Skill directory name, such as quickbi-data-analyst
+        required: true
+        type: string
+      version:
+        description: Version from SKILL.md in X.Y.Z-YYMMDD format, such as 7.0.2-261126
+        required: true
+        type: string
 
 concurrency:
   group: skill-packages-release
@@ -12,32 +21,44 @@ concurrency:
 
 jobs:
   package:
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     outputs:
       skill: ${{ steps.package.outputs.skill }}
+      version: ${{ steps.package.outputs.version }}
+      archive_blob: ${{ steps.mirror.outputs.archive_blob }}
     steps:
-      - name: Check out release tag
+      - name: Check out release source
         uses: actions/checkout@v4
 
-      - name: Build and validate tagged skill
+      - name: Build and validate skill package
         id: package
         env:
           TAG: ${{ github.ref_name }}
+          INPUT_SKILL: ${{ inputs.skill }}
+          INPUT_VERSION: ${{ inputs.version }}
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$TAG" == *@* ]] || { echo "Tag must look like <skill-name>@<version>" >&2; exit 1; }
-          skill="${TAG%@*}"
-          version="${TAG##*@}"
+          if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
+            [[ "$GITHUB_REF" == 'refs/heads/main' ]] || { echo "Select main to publish a skill" >&2; exit 1; }
+            skill="$INPUT_SKILL"
+            version="$INPUT_VERSION"
+          else
+            [[ "$TAG" == *@* ]] || { echo "Tag must look like <skill-name>@<version>" >&2; exit 1; }
+            skill="${TAG%@*}"
+            version="${TAG##*@}"
+          fi
           [[ "$skill" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || { echo "Invalid skill name: $skill" >&2; exit 1; }
-          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]] || { echo "Invalid version: $version" >&2; exit 1; }
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-([0-9]{6})$ ]] || { echo "Version must use X.Y.Z-YYMMDD" >&2; exit 1; }
+          release_date="${BASH_REMATCH[1]}"
+          python3 -c 'from datetime import datetime; import sys; datetime.strptime(sys.argv[1], "%y%m%d")' "$release_date" 2>/dev/null \
+            || { echo "Invalid date in version: $version" >&2; exit 1; }
           [[ -f "skills/$skill/SKILL.md" ]] || { echo "Skill not found: $skill" >&2; exit 1; }
 
           build_dir="$(mktemp -d "$RUNNER_TEMP/skill-package.XXXXXX")"
-          scripts/build.sh "$skill" --tag "$TAG" --out "$build_dir"
+          scripts/build.sh "$skill" --tag "$skill@$version" --out "$build_dir"
           shopt -s nullglob
           archives=("$build_dir"/*.zip)
           [[ ${#archives[@]} -eq 1 ]] || { echo "Expected exactly one zip" >&2; exit 1; }
@@ -45,7 +66,8 @@ jobs:
           echo "skill=$skill" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "path=${archives[0]}" >> "$GITHUB_OUTPUT"
-          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "source_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "source_tree=$(git rev-parse "HEAD:skills/$skill")" >> "$GITHUB_OUTPUT"
 
       - name: Check out main for the mirrored package
         uses: actions/checkout@v4
@@ -54,35 +76,70 @@ jobs:
           fetch-depth: 0
 
       - name: Commit package to main
+        id: mirror
         env:
           PACKAGE_PATH: ${{ steps.package.outputs.path }}
           SKILL: ${{ steps.package.outputs.skill }}
           VERSION: ${{ steps.package.outputs.version }}
-          TAG_COMMIT: ${{ steps.package.outputs.commit }}
+          SOURCE_COMMIT: ${{ steps.package.outputs.source_commit }}
+          SOURCE_TREE: ${{ steps.package.outputs.source_tree }}
         shell: bash
         run: |
           set -euo pipefail
-          git merge-base --is-ancestor "$TAG_COMMIT" HEAD || { echo "Release tag must point to a commit on main" >&2; exit 1; }
-          main_version="$(awk 'NR == 1 && /^---[[:space:]]*$/ { fm = 1; next } fm && /^---[[:space:]]*$/ { exit } fm && /^version:[[:space:]]*/ { sub(/^version:[[:space:]]*/, ""); print; exit }' "skills/$SKILL/SKILL.md")"
-          [[ "$main_version" == "$VERSION" ]] || { echo "main has $SKILL version $main_version, but tag requests $VERSION" >&2; exit 1; }
-
+          git merge-base --is-ancestor "$SOURCE_COMMIT" HEAD || { echo "Release source must be a commit on main" >&2; exit 1; }
           target="release/$SKILL.zip"
-          if [[ -f "$target" ]]; then
-            previous_version="$(unzip -p "$target" "$SKILL/SKILL.md" | awk '/^version:[[:space:]]*/ { sub(/^version:[[:space:]]*/, ""); print; exit }')"
-            [[ -n "$previous_version" ]] || { echo "Cannot read version from $target" >&2; exit 1; }
-            [[ "$previous_version" != "$VERSION" ]] || { echo "Version $VERSION is already packaged" >&2; exit 1; }
+          changelog="skills/$SKILL/CHANGELOG.md"
+          if [[ -f "$changelog" ]]; then
+            recorded_tree="$(awk -v version="$VERSION" '$1 == "<!--" && $2 == "oss-release" && $3 == version && $5 == "-->" { print $4; exit }' "$changelog")"
+            if [[ -n "$recorded_tree" ]]; then
+              read -r mirror_commit mirror_subject < <(git log -1 --format='%H %s' -- "$target")
+              mirror_tree="$(git rev-parse "$mirror_commit:skills/$SKILL")"
+              # A retry from main can include the changelog entry added alongside the mirrored ZIP.
+              [[ "$recorded_tree" == "$SOURCE_TREE" || "$mirror_tree" == "$SOURCE_TREE" ]] || { echo "Version $VERSION is already assigned to different skill contents" >&2; exit 1; }
+              [[ "$mirror_subject" == "build: package $SKILL@$VERSION" ]] || { echo "Version $VERSION is already archived and is not the current publish attempt" >&2; exit 1; }
+              echo "Reusing the existing package for $SKILL@$VERSION"
+              echo "archive_blob=$(git hash-object "$target")" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
           fi
+
+          git diff --quiet "$SOURCE_COMMIT" HEAD -- "skills/$SKILL" || { echo "Skill contents on main have changed since the release source was selected" >&2; exit 1; }
           mkdir -p release
           cp "$PACKAGE_PATH" "$target"
-          git add -- "$target"
+          python3 - "$changelog" "$SKILL" "$VERSION" "$SOURCE_TREE" <<'PY'
+          from datetime import datetime
+          from pathlib import Path
+          import re
+          import sys
+
+          filename, skill, version, source_tree = sys.argv[1:]
+          path = Path(filename)
+          text = path.read_text(encoding="utf-8") if path.exists() else "# Changelog\n"
+          section = re.search(rf"^## \[{re.escape(version)}\](?:[ \t]+[^\n]*)?$", text, re.MULTILINE)
+          if section:
+              head, tail = text[:section.end()], text[section.end():]
+          else:
+              first_release = re.search(r"^## ", text, re.MULTILINE)
+              position = first_release.start() if first_release else len(text)
+              release_date = datetime.strptime(version.rsplit("-", 1)[1], "%y%m%d").date()
+              head = f"{text[:position].rstrip()}\n\n## [{version}] - {release_date}"
+              tail = text[position:]
+
+          url = f"https://quickbi-skills.oss-cn-beijing.aliyuncs.com/{skill}.{version}.zip"
+          archive_entry = f"[下载 OSS 归档]({url})\n\n<!-- oss-release {version} {source_tree} -->"
+          tail = tail.lstrip("\n")
+          separator = "\n\n" if tail else "\n"
+          path.write_text(f"{head}\n\n{archive_entry}{separator}{tail}", encoding="utf-8")
+          PY
+          git add -- "$target" "$changelog"
           git -c user.name='github-actions[bot]' \
               -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
               commit -m "build: package $SKILL@$VERSION"
           git push origin HEAD:refs/heads/main
+          echo "archive_blob=$(git hash-object "$target")" >> "$GITHUB_OUTPUT"
 
   sync-oss:
     needs: package
-    if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.package.result == 'success') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -107,9 +164,11 @@ jobs:
           chmod u+x "$ossutil_dir/ossutil"
           echo "$ossutil_dir" >> "$GITHUB_PATH"
 
-      - name: Upload release packages to OSS
+      - name: Upload archived and latest packages to OSS
         env:
           SKILL: ${{ needs.package.outputs.skill }}
+          VERSION: ${{ needs.package.outputs.version }}
+          ARCHIVE_BLOB: ${{ needs.package.outputs.archive_blob }}
           OSS_REGION: ${{ vars.OSS_REGION || 'cn-beijing' }}
           OSS_ACCESS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}
           OSS_ACCESS_KEY_SECRET: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
@@ -120,13 +179,9 @@ jobs:
             echo "::error::Set the OSS_ACCESS_KEY_ID and OSS_ACCESS_KEY_SECRET Actions secrets."
             exit 1
           fi
-          if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
-            shopt -s nullglob
-            archives=(release/*.zip)
-          else
-            archives=("release/$SKILL.zip")
-          fi
-          [[ ${#archives[@]} -gt 0 ]] || { echo "::error::No release ZIPs found."; exit 1; }
-          for archive in "${archives[@]}"; do
-            ossutil cp "$archive" "oss://quickbi-skills/${archive##*/}" --force
-          done
+          archive="release/$SKILL.zip"
+          [[ -n "$ARCHIVE_BLOB" && "$(git hash-object "$archive")" == "$ARCHIVE_BLOB" ]] \
+            || { echo "::error::Version $VERSION is no longer current for $SKILL."; exit 1; }
+          unzip -tq "$archive"
+          ossutil cp "$archive" "oss://quickbi-skills/$SKILL.$VERSION.zip" --force
+          ossutil cp "$archive" "oss://quickbi-skills/$SKILL.zip" --force

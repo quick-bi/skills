@@ -24,27 +24,6 @@ You can also paste this prompt into your agent.
 Download https://quickbi-skills.oss-cn-beijing.aliyuncs.com/quickbi-data-analyst.zip and install the quickbi-data-analyst folder in your skills directory. Report the installed version from SKILL.md.
 ```
 
-### Install from source
-
-**GitHub**
-
-```bash
-npx skills add https://github.com/quick-bi/skills.git
-```
-
-**Gitee**
-
-```bash
-npx skills add https://gitee.com/quick-bi/skills.git
-```
-
-To install a specific skill, append `--skill <skill-name>`.
-
-```bash
-npx skills add https://github.com/quick-bi/skills.git --skill <skill-name>
-npx skills add https://gitee.com/quick-bi/skills.git --skill <skill-name>
-```
-
 ## Repository structure
 
 ```text
