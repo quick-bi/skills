@@ -221,11 +221,26 @@ def build_html_files(cfg, files):
     return html_files or None
 
 
-def submit(cfg, message, session_id, timeout):
+def normalize_asset_ids(asset_ids):
+    """Match the OpenAPI selection contract; validate before deduplicating."""
+    if asset_ids is None:
+        return []
+    if (not isinstance(asset_ids, list) or len(asset_ids) > 10
+            or any(not isinstance(value, str) or not 1 <= len(value.strip()) <= 36
+                   for value in asset_ids)):
+        die("INVALID_PARAMS", "最多指定 10 个个人资产 ID，每项去除首尾空白后为 1~36 个字符",
+            "使用个人资产目录返回的完整 asset_id；不要传企业资产或底层报表 ID", exit_code=2)
+    return list(dict.fromkeys(value.strip() for value in asset_ids))
+
+
+def submit(cfg, message, session_id, timeout, *, asset_ids=None):
+    selected_ids = normalize_asset_ids(asset_ids)
     # user_id 恒为个人级 AccessId（api_key），服务端以该用户身份取数
     body = {"message": message, "user_id": cfg["accessId"]}
     if session_id:
         body["session_id"] = session_id
+    if selected_ids:
+        body["asset_ids"] = selected_ids
     try:
         envelope = http_json(cfg, "POST", PATH_SUBMIT, json_body=body,
                              timeout=timeout, ok_codes=("202", "200", "0"))
@@ -256,6 +271,8 @@ def cancel_chat(cfg, session_id):
 def main():
     parser = argparse.ArgumentParser(description="quickbi-data-analyst 问数/仪表板")
     parser.add_argument("--message", help="用户问题原文（纯文本；脚本会自动加执行约束前缀）")
+    parser.add_argument("--asset-id", action="append", dest="asset_ids",
+                        help="指定个人 ABI asset_id；可重复，最多 10 项；仅用于提交新问题")
     parser.add_argument("--dashboard", action="store_true",
                         help="仪表板生成轮次：约束服务端用 qbi-dashboard-builder 产出仪表板产物")
     parser.add_argument("--session-id", help="复用会话（多轮对话/补充追问信息）")
@@ -276,6 +293,11 @@ def main():
     parser.add_argument("--no-guard", action="store_true",
                         help="不注入执行约束前缀（仅排障用；会失去技能白名单与组件禁用约束）")
     args = parser.parse_args()
+
+    if args.asset_ids is not None and (not args.message or args.conversation_id or args.cancel):
+        die("INVALID_PARAMS", "--asset-id 仅能与提交新问题的 --message 一起使用",
+            "续读或取消不传 --asset-id；追问需继续指定资产时重新传入", exit_code=2)
+    asset_ids = normalize_asset_ids(args.asset_ids)
 
     # --cancel 为独立模式，无需 message / conversation-id
     if not args.cancel and not args.message and not args.conversation_id:
@@ -314,7 +336,7 @@ def main():
                                   "" if guard else "（未注入约束）", args.message[:50]))
         session_id, conversation_id = submit(
             cfg, build_message(args.message, guard, args.dashboard), session_id,
-            args.submit_timeout)
+            args.submit_timeout, asset_ids=asset_ids)
         if not conversation_id:
             die("SERVER_ERROR", "提交响应缺少 conversation_id", "携 traceId 报障")
         log("已受理 session_id=%s conversation_id=%s"

@@ -1,7 +1,8 @@
 # 脚本接口契约（quickbi-data-analyst 问数/HTML 报告/仪表板）
 
-当前唯一入口脚本，Python 3.8+ 标准库即可运行：
+入口脚本均只依赖 Python 3.8+ 标准库：
 
+- `scripts/assets.py`：只读查询个人/企业资产目录、分页与名称过滤，个人资产返回学习状态
 - `scripts/chat.py`：问数（文字与 Markdown 表格）+ HTML 报告（终态 files 解析免登预览/下载链接）+ 仪表板生成（`--dashboard`，解析 artifact-dashboard 产物并换票输出预览链接）
 
 依赖同目录基础模块（按机制拆分，后续新入口脚本共用）：`config_loader.py`（三级凭证加载）、`gateway.py`（签名/SSL/HTTP/错误映射）、`stream.py`（SSE 分段消费）、`output.py`（输出契约）。
@@ -35,6 +36,7 @@
 | 参数 | 类型 | 默认 | 说明 |
 | --- | --- | --- | --- |
 | `--message` | string | - | 用户问题原文（纯文本）。**脚本会自动在前面拼接系统提示词**，故可用长度 = 10000 − 提示词前缀长度，超限报 `CONFIG_MISSING`（exit 2） |
+| `--asset-id` | string，可重复 | - | 个人 ABI `asset_id`，最多 10 项；每项去除首尾空白后 1~36 字符，保持顺序去重。仅与提交新问题的 `--message` 使用，不能与 `--conversation-id` 或 `--cancel` 一起使用 |
 | `--dashboard` | flag | 关 | 仪表板生成轮次：系统提示词改为约束服务端用 `qbi-dashboard-builder` 产出仪表板产物；纯问数轮次不要加。只影响提交，续读无需携带 |
 | `--session-id` | string | - | 复用会话（多轮上下文 / 继续读取同一轮结果），值来自上一轮出参 `sessionId` |
 | `--conversation-id` | string | - | 只挂流不提交（断点恢复），值来自本次提交的 `conversationId` |
@@ -53,6 +55,44 @@
 - 只用 `--conversation-id` 继续读取结果时，也要同时传 `--session-id <sessionId>`，用于保持同一会话上下文
 - `--stream-step` 首次可与 `--message` 一起使用；后续用 `--conversation-id <cid> --cursor <cursor> --session-id <sessionId> --stream-step` 继续拉下一段
 - `--cancel` 为独立模式：必须配 `--session-id` 指定要取消的会话
+
+## 资产目录查询（`scripts/assets.py`）
+
+复用现有个人 AK/SK、`--workspace-dir` 与签名模块；仅发 GET，不复制资产、不触发学习、不提交问数。
+
+| 参数 | 默认 | 说明 |
+| --- | --- | --- |
+| `--scope` | `personal` | `personal` 或 `enterprise` |
+| `--page` | `1` | 页码，至少 1 |
+| `--page-size` | `20` | 每页 1~100 项 |
+| `--keyword` | 无 | 名称关键词；个人目录在客户端过滤当前页，企业目录传服务端过滤 |
+| `--workspace-dir` | 环境变量或当前目录 | 与提问入口相同的凭证查找规则 |
+
+- 个人目录：`GET /openapi/v2/abi/agent/assets?offset=(page-1)*page_size&limit=page_size`。
+- 企业目录：`GET /openapi/v2/abi/agent/enterprise-assets?page=page&page_size=page_size&keyword=...`。
+- `items` 保留接口字段：个人为 `asset_id / asset_name / asset_type / md_status / wiki_status` 等；企业为 `enterprise_asset_id / asset_name / asset_type / workspace_id`。
+- 统一输出：`connected / scope / items / total / page / pageSize / scannedOnPage / matchedOnPage / hasMore / nextPage / traceId`。
+- 个人目录的 `total` 为过滤前总数，企业目录为服务端筛选后总数。`hasMore` 根据目录分页计算，不根据关键词匹配数量计算；即使 `items=[]`，也可能需要读取 `nextPage`。按名称查找须遍历后续页才能判断不存在或唯一；重复名称需要用户确认。
+- 目录中的学习状态是查询时的状态，不保证底层数据权限、服务可用性或语义召回效果。未返回某类型也不代表该类型不被 ABI 支持。
+
+## 结构化指定资产
+
+`chat.py --asset-id` 将个人资产 ID 写入 `POST /openapi/v2/abi/chat/completions/async` 的 JSON body，保留既有问题前缀、个人身份和会话参数：
+
+```json
+{
+  "message": "<既有提示词前缀和用户原文>",
+  "user_id": "<个人 AccessId>",
+  "session_id": "<追问时的会话 ID，可省略>",
+  "asset_ids": ["<个人 ABI asset_id>"]
+}
+```
+
+服务端检查个人资产归属、当前状态、`wiki_status=completed` 和底层权限，并按真实资产类型生成来源引用。个人仪表板资产也可指定；不要用企业资产 ID、底层报表/数据集 ID 替代个人 ABI ID。资产未准备好或无权访问时保留服务端错误，禁止丢弃 `asset_ids` 后重新提交。
+
+`asset_ids` 仅影响当前提问轮次，不是所有工具的权限隔离范围。继续基于相同资产追问时重新传入，续读本轮结果则只用 conversation/session ID。未指定时不发送该字段，保留原来的自动召回方式。
+
+兼容性：目标 ABI 必须部署支持 `asset_ids` 的 OpenAPI 版本。旧服务端可能忽略未知字段，因此 HTTP 200/202 不能证明已采用所选资产；须结合部署版本或本轮来源引用确认。
 
 ## 提示词拼接模型（脚本自动处理，每轮提交都带）
 
@@ -146,6 +186,8 @@
 | `RESOURCE_NOT_FOUND` | 404 | 资源不存在（conversation_id 有误或不归属当前用户） | 检查 ID 是否为本次提交返回值 |
 | `PATH_NOT_FOUND` | 404 | 接口路径未注册（返回前端页面） | 该环境可能未部署对应 openapi，向后端确认 |
 | `RATE_LIMITED` | 429 | 触发限流 | 退避后重试 |
+| `ASSET_NOT_READY` | 409 | 指定资产学习未完成 | 在 Quick BI 完成学习后重试；不去掉选资产条件 |
+| `STATE_CONFLICT` | 409 | 其他资源状态冲突 | 按服务端说明处理，不重复提交或丢弃指定资产 |
 | `INVALID_PARAMS` | 422 | 参数校验失败（FastAPI 原生 detail，退出码 2） | 对照本文检查参数取值与范围 |
 | `NETWORK_ERROR` | - | 网络失败 / 请求超时 | 检查 server_domain 与网络连通性 |
 | `SERVER_ERROR` | 5xx | 服务端错误（或网关返回 HTML） | 携 traceId 报障；降低并发后重试 |
