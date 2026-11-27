@@ -173,6 +173,12 @@ def map_http_error(status, body_text, content_type="", trace_id=""):
                     "确认 server_domain 指向 QuickBI 开放接口域名")
         return ("RESOURCE_NOT_FOUND", "资源不存在 (404)",
                 "检查 ID 是否正确、是否归属当前用户")
+    if status == 409:
+        if "wiki" in lower or "learning" in lower or "学习" in (body_text or ""):
+            return ("ASSET_NOT_READY", "资产学习状态冲突 (409): %s" % (body_text or "")[:300],
+                    "在 Quick BI 完成资产学习后重试；不要去掉资产条件改查其他数据")
+        return ("STATE_CONFLICT", "资源状态冲突 (409): %s" % (body_text or "")[:300],
+                "根据服务端错误说明处理状态冲突；不要重复提交或丢弃指定资产")
     if status == 422:
         return ("INVALID_PARAMS", "参数校验失败 (422): %s" % (body_text or "")[:300],
                 "对照接口文档检查参数取值与范围")
