@@ -2,6 +2,10 @@
 
 ## [7.0.2-261201] - 2026-12-01
 
+[下载 OSS 归档](https://quickbi-skills.oss-cn-beijing.aliyuncs.com/quickbi-data-analyst.7.0.2-261201.zip)
+
+<!-- oss-release 7.0.2-261201 c77b956ecec2dfd35f44700f4fe7a4264642bc17 -->
+
 ### Added
 
 - 新增个人/企业数据资产目录查询，支持分页、名称关键词过滤与个人资产学习状态展示，复用现有 AK/SK 配置。
